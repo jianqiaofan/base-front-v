@@ -1,0 +1,1686 @@
+<template>
+  <div class="app-container">
+    <Myduty></Myduty>
+    <el-divider></el-divider>
+    <div v-if="approval_plan.length >0 ">
+      <h3 id="maodian">待审批的方案</h3>
+      <table style="width: 1500px">
+        <thead>
+        <tr>
+          <td style="width: 40px">序号</td>
+          <td style="width: 180px">项目名称</td>
+          <td style="width: 100px">项目编号</td>
+          <td style="width: 180px">方案名称</td>
+          <td style="width: 100px">设计师</td>
+          <td style="width: 100px">校核人</td>
+          <td style="width: 100px">方案状态</td>
+          <td style="width: 200px">提交资料链接</td>
+          <td style="width: 160px">更新时间</td>
+          <td style="width: 160px">要求完成时间</td>
+          <td style="width: 120px">操作</td>
+        </tr>
+        </thead>
+        <tr v-for="(plan,items) in showApprovalTable" v-if="plan.technical_director === name" :key="plan.plan_code">
+          <td>{{ items + 1 }}</td>
+
+          <td style="text-align: left;padding-left: 10px">{{ plan.project_name }}</td>
+          <td style="text-align: left;padding-left: 10px">{{ plan.project_code }}</td>
+
+          <td style="text-align: left;padding-left: 10px">
+            <button class="check-bom"  @click="editPlan(plan.plan_code,plan.status,plan.designer,true)">{{ plan.plan_description }}</button>
+          </td>
+
+          <td>{{ plan.designer }}</td>
+          <td>{{ plan.checker }}</td>
+
+          <td v-if="plan.status==='2'"><span style="color: orangered">请尽快处理</span></td>
+          <td v-else>{{ plan.status|planStatusFilter }}</td>
+
+          <td>
+            <el-link :href="plan.data_link" target="_blank">{{ plan.data_link|linkFilter(36) }}</el-link>
+          </td>
+
+          <td>{{ plan.update_time }}</td>
+          <td>{{ plan.required_completion_time}}</td>
+          <td>
+            <button @click="approvalPass(plan.plan_code)" :disabled="plan.status!=='2'">通过</button>
+            <button @click="approvalReject(plan.plan_code)" :disabled="plan.status!=='2'">退回</button>
+          </td>
+        </tr>
+      </table>
+      <el-divider></el-divider>
+    </div>
+
+    <div v-if="showTable.length >0">
+      <h3 id="maodian1">我的项目方案</h3>
+      <table style="width: 1500px">
+        <thead>
+        <tr style="height: 60px">
+          <td style="width: 300px"><h3>项目名称</h3></td>
+          <td ><h3>方案明细</h3></td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="project in showTable" :key="project.id" style="height: 40px">
+          <td style="text-align: left;padding-left: 10px">
+            <span v-show="!project.name.includes('临时保存')">项目编号：{{ project.code }}</span><br>
+            项目名称：<router-link class="link-item" :to="`/tbTrackbom?pcode=${project.code}&pname=${project.name}`">{{ project.name }}</router-link><br>
+            <span v-show="!project.name.includes('临时保存')">销售经理：{{ project.seller }}</span><br>
+            <span v-show="!project.name.includes('临时保存')">
+            提资链接：<el-link type="primary" :href="project.data_link" target="_blank">{{ project.data_link|linkFilter(36) }}</el-link>
+            </span>
+          </td>
+          <td>
+            <div v-if="project.planList.length > 0">
+              <table>
+                <thead>
+                <tr>
+                  <td style="width: 60px">序号</td>
+                  <td style="width: 280px;">方案信息</td>
+                  <td style="width: 150px">状态</td>
+                  <td style="width: 160px">更新时间</td>
+                  <td style="width: 160px">操作</td>
+                </tr>
+                </thead>
+                <tr v-for="(plan,items) in project.planList" :key="plan.plan_code">
+                  <td>
+                    <input type="checkbox" :id="project.code+'_'+plan.plan_code" :disabled="plan.ifSubmit">&nbsp;&nbsp;&nbsp;&nbsp;
+                    {{ items + 1 }}
+                  </td>
+                  <td style="text-align: left;padding-left: 10px">
+                    <button class="check-bom" @click="editPlan(plan.plan_code,plan.status,plan.designer,true)">{{ plan.plan_description }}</button>
+                  </td>
+
+                  <td>{{ plan.status | planStatusFilter }}</td>
+
+                  <td>{{ plan.update_time }}</td>
+                  <td>
+                    <el-button type="primary" size="mini"
+                               @click="editPlan(plan.plan_code,plan.status,plan.designer,false)"
+                    >
+                      编 辑
+                    </el-button>
+                    <el-button type="danger" size="mini"
+                               @click="showDeletePlan(plan.plan_code,plan.status,plan.designer)"
+                    >
+                      删 除
+                    </el-button>
+                  </td>
+
+                </tr>
+                <tr v-show="!project.name.includes('临时保存')">
+                  <td colspan="3" style="text-align: left">请选择后再提交</td>
+                  <td>
+                    <el-button type="text" @click="showDialog(project.name,project.code)">提交校审</el-button>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div v-if="project.planList.length === 0">
+              <span style="color: red">暂无方案</span>
+            </div>
+          </td>
+
+        </tr>
+        </tbody>
+
+      </table>
+      <el-divider></el-divider>
+    </div>
+
+    <div v-if="showCheckTable.length > 0">
+      <h3 id="maodian2">我的校核</h3>
+      <table style="width: 1500px">
+        <thead>
+        <tr>
+          <td style="width: 60px">序号</td>
+          <td style="width: 180px">项目名称</td>
+          <td style="width: 100px">项目编号</td>
+          <td style="width: 280px;">方案信息</td>
+          <td style="width: 100px">设计师</td>
+          <td style="width: 100px">方案状态</td>
+          <td style="width: 200px">提交资料链接</td>
+          <td style="width: 160px">更新时间</td>
+          <td style="width: 160px">要求完成时间</td>
+          <td style="width: 120px">操作</td>
+        </tr>
+        </thead>
+        <tr v-for="(plan,items) in showCheckTable" :key="plan.plan_code">
+          <td>{{ items + 1 }}</td>
+
+          <td style="text-align: left;padding-left: 10px">{{ plan.project_name }}</td>
+          <td style="text-align: left;padding-left: 10px">{{ plan.project_code }}</td>
+          <td style="text-align: left;padding-left: 10px">
+            <button class="check-bom" @click="editPlan(plan.plan_code,plan.status,plan.designer,true)">{{ plan.plan_description }}</button>
+          </td>
+
+          <td>{{ plan.designer }}</td>
+
+          <td v-if="plan.status==='0'"><span style="color: greenyellow">已退回</span></td>
+          <td v-else-if="plan.status==='1'"><span style="color: orangered">请尽快处理</span></td>
+          <td v-else>{{ plan.status|planStatusFilter }}</td>
+
+          <td>
+            <el-link :href="plan.data_link" target="_blank">{{ plan.data_link|linkFilter(36) }}</el-link>
+          </td>
+
+          <td>{{ plan.update_time }}</td>
+          <td>{{ plan.required_completion_time }}</td>
+          <td>
+            <button @click="checkPass(plan.plan_code)" :disabled="plan.status!=='1'">通过</button>
+            <button @click="checkReject(plan.plan_code)" :disabled="plan.status!=='1'">退回</button>
+          </td>
+        </tr>
+      </table>
+      <el-divider></el-divider>
+    </div>
+
+    <!--    提交校核表单-->
+    <el-dialog title="提交校核" :visible.sync="dialogVisible" width="40%" :close-on-click-modal="false">
+      <el-form ref="dataForm" label-width="100px" size="small"
+               style="padding-right: 40px;"
+      >
+        <el-form-item label="项目名称">{{ theProjectName }}</el-form-item>
+        <el-form-item label="校核人" prop="whoCheck">
+          <el-select v-model="whoCheck" placeholder="请指定校核人">
+            <el-option
+              v-for="item in mydata.select_option.designer" :key="item.value" :label="item.label" :value="item.value"
+            >
+            </el-option>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="补充说明" prop="code">
+          <el-input type="textarea" :rows="2" placeholder="请输入内容(100字以内)" v-model="theDescription">
+          </el-input>
+        </el-form-item>
+        <el-form-item label="提交方案" prop="name">
+          <el-input v-model="theSubmitPlans" :disabled="true"/>
+        </el-form-item>
+
+
+      </el-form>
+
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false" size="small" icon="el-icon-refresh-right">取 消</el-button>
+        <el-button type="primary" icon="el-icon-check" @click="submitCheck()" size="small">确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog title="方案明细" :visible.sync="checkDialogVisible" width="90%" :close-on-click-modal="false">
+      <!--      <el-button @click="drawer = true" type="primary" style="margin-left: 16px;">-->
+      <!--        点我打开-->
+      <!--      </el-button>-->
+      <h1>校核信息</h1>
+      <!--备品备件率表-->
+      <table>
+        <caption style="text-align: left;">
+          <label>备品备件率%</label>
+        </caption>
+        <thead>
+        <tr>
+          <td style="width:80px">立柱</td>
+          <td style="width:80px">主梁</td>
+          <td style="width:80px">檩条</td>
+          <td style="width:80px">紧固件</td>
+          <td style="width:80px">标准件</td>
+          <td style="width:80px">电器配件</td>
+          <td style="width:80px">其它</td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>{{ spareParts.post }}</td>
+          <td>{{ spareParts.beam }}</td>
+          <td>{{ spareParts.purlin }}</td>
+          <td>{{ spareParts.fasten }}</td>
+          <td>{{ spareParts.standard }}</td>
+          <td>{{ spareParts.electricalMechanical }}</td>
+          <td>{{ spareParts.other }}</td>
+        </tr>
+        </tbody>
+      </table>
+      <el-divider></el-divider>
+
+      <!--    全部要人工输入的内容-->
+      <table>
+        <caption style="text-align: left;">
+          <label>项目信息输入(需要手工输入)</label>
+        </caption>
+        <thead>
+        <tr>
+          <td>Tracker<br>Name</td>
+          <td style="width: 50px">组件<br>套数</td>
+          <td style="width: 50px">组件<br>容量</td>
+          <td style="width: 80px">产品系列</td>
+          <td style="width: 80px">供电方式</td>
+          <td style="width: 80px">防腐<br>等级</td>
+          <td style="width: 80px">立柱<br>防腐</td>
+          <td style="width: 80px">主梁<br>防腐</td>
+          <td style="width: 80px">檩条<br>防腐</td>
+          <td style="width: 60px">主梁<br>品牌</td>
+          <td style="width: 60px">檩条<br>品牌</td>
+          <td style="width: 80px">桩基类别</td>
+          <td style="width: 80px">桩参数</td>
+          <td style="width: 80px">减速机</td>
+          <td style="width: 120px">减速机罩</td>
+          <td style="width: 80px">阻尼立柱</td>
+          <td style="width: 80px">阻尼型号</td>
+          <td style="width: 80px">梁柱表</td>
+        </tr>
+        </thead>
+        <tbody>
+        <!--      综合输入-->
+        <tr v-if="trackersInfo.length>0">
+          <td colspan="15">以下为单个支架进行输入</td>
+        </tr>
+        </tbody>
+
+        <!--      各支架单独输入-->
+        <tbody v-for="t in trackersInfo" :key="t.id">
+
+        <tr :style="{backgroundColor:t.rowColor}">
+          <td>{{ t.trackBrifeName }}</td>
+          <td>{{ t.trackerNum }}</td>
+          <td>{{ t.pv_capacity }}</td>
+          <td>{{ t.product_system }}</td>
+          <td>{{ t.power_supply }}</td>
+          <td>{{ t.corrosion_proofing_grade }}</td>
+          <td>{{ t.post_galvanizin_thickness }}</td>
+          <td>{{ t.beam_galvanizin_thickness }}</td>
+          <td>{{ t.purlin_galvanizin_thickness }}</td>
+          <td>{{ t.beam_brand }}</td>
+          <td>{{ t.purlin_brand }}</td>
+          <td></td>
+          <td></td>
+          <td>{{ t.slew_drive_inch }}</td>
+          <td>{{ t.slew_cover_if_need?'有':'无' }}</td>
+          <td>{{ t.dumper_num }}</td>
+          <td>{{ t.dumper_type }}
+            <td>
+              <button @click="t.showPostBeamTable=!t.showPostBeamTable">展开/隐藏</button>
+            </td>
+          </td>
+          <td></td>
+        </tr>
+        <tr v-show="t.showPostBeamTable">
+          <td>{{ t.trackBrifeName }}</td>
+          <td colspan="10">
+
+            <!--立柱明细表-->
+            <div>
+              <table style="width: 700px;">
+                <thead>
+                <tr>
+                  <td style="text-align: center;">位置</td>
+                  <td style="text-align: center;">驱动</td>
+                  <td style="text-align: center;">截面</td>
+                  <td style="text-align: center;">材质</td>
+                  <td style="text-align: center;">高度</td>
+                  <td style="text-align: center;">桩类型</td>
+                  <td style="text-align: center;">桩详细参数</td>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr v-for="p in t.post_info_lst" :key="t.position">
+                  <td style="text-align: center;width:80px;">{{ p.position }}</td>
+                  <td style="text-align: center;width:80px;">{{ p.category }}</td>
+                  <td style="text-align: center;width:80px;">{{ p.section }}</td>
+                  <td style="text-align: center;width:80px;">{{ p.material }}</td>
+                  <td style="text-align: center;width:60px;">{{ p.height }}</td>
+                  <td style="text-align: center;width:80px;">{{ p.pile_type }}</td>
+                  <td style="text-align: left;">{{ p.pile_desc }}</td>
+                </tr>
+                </tbody>
+              </table>
+            </div>   <!--立柱明细表-->
+          </td>
+          <td colspan="8">
+            <!--主梁明细表-->
+            <div style="vertical-align: top">
+              <table style="width: 600px;">
+                <thead>
+                <tr>
+                  <td>起点</td>
+                  <td>终点</td>
+                  <td>截面</td>
+                  <td>材质</td>
+                  <td>长度</td>
+                  <td>类别</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="b in t.beam_info_lst" :key="b.start">
+                  <td style="width:80px;">{{ b.start }}</td>
+                  <td style="width:80px;">{{ b.end }}</td>
+                  <td style="width:166px;">{{ b.section }}</td>
+                  <td style="width:80px;">{{ b.material }}</td>
+                  <td style="width:60px;">{{ b.length }}</td>
+                  <td style="text-align: center;">{{ b.category }}</td>
+                </tr>
+                </tbody>
+              </table>
+            </div>   <!--主梁明细表-->
+<!--            <button @click="printTrackObj(t)">打印输入数据</button>-->
+          </td>
+        </tr>
+        </tbody>
+
+      </table>
+      <el-divider></el-divider>
+
+      <!--    檩条输入-->
+      <table>
+        <caption style="text-align: left;">
+          <label>项目信息输入(檩条)</label>
+        </caption>
+        <thead>
+        <tr>
+          <td>Tracker Name</td>
+          <td>檩条总根数</td>
+          <td style="width: 500px">截面型号/材质/长度/数量</td>
+        </tr>
+        </thead>
+        <tbody>
+
+        <!--单个支架檩条单独输入-->
+        <tr tr v-for="t in trackersInfo" :key="t.id" :style="{backgroundColor:t.rowColor}">
+          <td>{{ t.trackBrifeName }}</td>
+          <!--檩条总根数-->
+          <td>{{ t.purlinCount }}</td>
+          <td style="text-align: left">
+            <div v-for="purlin in t.purlin_info_lst " :key="purlin.id">
+              <tr>
+                <td style="width: 100px;">{{ purlin.section }}</td>
+                <td style="width: 100px;">{{ purlin.length }}</td>
+                <td style="width: 100px;">{{ purlin.material }}</td>
+                <td style="width: 100px;">{{ purlin.amount }}</td>
+              </tr>
+            </div>
+          </td>
+        </tr>
+
+        </tbody>
+      </table>
+      <el-divider></el-divider>
+
+      <!--    主要从计算文件中导出，少量需要手工更正的内容表-->
+      <table>
+        <caption style="text-align: left;">
+          <label>项目信息输入(主要从计算文件中导出，少量需要手工更正的内容表)</label>
+        </caption>
+        <thead>
+        <tr>
+          <td>Tracker Name</td>
+          <td>组件结构</td>
+          <td style="width: 160px">组件排布</td>
+          <td>组件数量</td>
+          <td>组件串数</td>
+          <td>单板长度</td>
+          <td>单板宽度</td>
+          <td>单板厚度</td>
+          <td>驱动柱数量</td>
+          <td>组件最小离地</td>
+          <td>指定柱距</td>
+          <td>是否通铺</td>
+        </tr>
+        </thead>
+        <tbody>
+
+        <tr v-for="t in trackersInfo" :key="t.id">
+          <td>{{ t.trackBrifeName }}</td>
+          <td>{{ t.product_system }}</td>
+          <td>{{ t.solar_list }}</td>
+          <td>{{ t.solar_num }}</td>
+          <td>{{ t.pvStringNum }}</td>
+          <td>{{ t.pv_length }}</td>
+          <td>{{ t.pv_width }}</td>
+          <td>{{ t.pv_thickness }}</td>
+          <td>{{ t.slew_count }}</td>
+          <td>{{ t.h_min }}</td>
+          <td>{{ t.dis }}</td>
+          <td>{{ t.pv_iftp }}</td>
+        </tr>
+
+        </tbody>
+      </table>
+
+      <el-divider></el-divider>
+
+      <table>
+        <caption style="text-align: left;">
+          <label>计算结果(sum)</label>
+        </caption>
+        <thead>
+        <tr>
+          <td>序号</td>
+          <td>支架名称</td>
+          <td>操作查看</td>
+          <td colspan="2">支架数量(套)</td>
+          <td colspan="2">容量(kW)</td>
+          <!--不含备品备件-->
+          <td colspan="3">不含备件</td>
+          <!--含备品备件-->
+          <td colspan="3">含备件</td>
+        </tr>
+        <tr>
+          <td>No.</td>
+          <td style="width: 100px;">Tracker Name</td>
+          <td>Results</td>
+
+          <td style="width: 80px;">支架</td>
+          <td style="width: 80px;">占比</td>
+          <td style="width: 80px;">单套</td>
+          <td style="width: 80px;">总容量</td>
+          <!--不含备品备件-->
+          <td style="width: 80px;">单套价格</td>
+          <td style="width: 80px;">总价格</td>
+          <td style="width: 80px;">元/W</td>
+          <!--含备品备件-->
+          <td style="width: 80px;">单套价格</td>
+          <td style="width: 80px;">总价格</td>
+          <td style="width: 80px;">元/W</td>
+
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="(t,item) in trackersInfo" :key="t.id">
+          <td>{{ item + 1 }}</td>
+          <td>{{ t.trackBrifeName }}</td>
+          <td>
+            <el-button @click="drawerShowResult(t.id,item)" type="primary" size="mini" :disabled="!t.ifCalculated">查看结果
+            </el-button>
+          </td>
+          <td>{{ t.trackerNum }}</td>
+          <td>{{ trackerRatio[item].toFixed(2) }}%</td>
+          <!--单套容量-->
+          <td>{{ singleTrackerPvCapacity[item] }}</td>
+          <!--总容量-->
+          <td>{{ sortTrackerPvCapacity[item] }}</td>
+
+          <!--        不含备件单价总价-->
+          <td>{{ trackerPrice[item] }}</td>
+          <td>{{ sortTrackerPrice[item] }}</td>
+          <td>{{ pricePerWattWithSpareParts[item] }}</td>
+          <!--        含备件单价总价-->
+          <!--        <td>{{ trackerPrice[item] }}</td>-->
+          <td>{{ trackerPriceWithSpareParts[item] }}</td>
+          <td>{{ sortTrackerPriceWithSpareParts[item] }}</td>
+          <td>{{ pricePerWattWithSpareParts[item] }}</td>
+          <!--        <td></td>-->
+        </tr>
+        <tr>
+          <td>不含气象站总计</td>
+          <td></td>
+          <td>全部数量</td>
+          <td>{{ this.trackerTotalNum }}</td>
+          <td>100%</td>
+          <td>全部容量</td>
+          <td>{{ this.trackerTotalWatt }}</td>
+          <td>总计</td>
+          <td>{{ totalTrackerPrice }}</td>
+          <td></td>
+          <td>总计</td>
+          <td>{{ totalTrackerPriceWithSpareParts }}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>含气象站总计</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td>总计</td>
+          <td>{{ (totalTrackerPrice + weatherStationTotalPrice).toFixed(2) }}</td>
+          <td></td>
+          <td>总计</td>
+          <td>{{ (totalTrackerPriceWithSpareParts + weatherStationTotalPrice).toFixed(2) }}</td>
+          <td></td>
+        </tr>
+
+        </tbody>
+      </table>
+      <!--      {{jsonObject}}-->
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="checkDialogVisible = false" size="small" icon="el-icon-refresh-right">取 消</el-button>
+        <!--        <el-button type="primary" icon="el-icon-check" @click="submitCheck()" size="small">确 定</el-button>-->
+      </span>
+    </el-dialog>
+
+
+    <!--    校核通过驳回对话框=====================================================-->
+    <el-dialog title="确认校核通过对话框" :visible.sync="dialogCheckPassVisible" width="40%"
+               :close-on-click-modal="false"
+    >
+      <el-form ref="dataForm" :rules="rules" label-width="100px" size="small"
+               style="padding-right: 40px;"
+      >
+        <el-form-item label="请补充说明(如果有)" prop="code">
+          <el-input type="textarea" :rows="4" placeholder="请输入内容(500字以内)" v-model="check_pass_description">
+          </el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogCheckPassVisible = false" size="small" icon="el-icon-refresh-right">取 消</el-button>
+        <el-button type="primary" icon="el-icon-check" @click="makeSureCheckPass()" size="small">确认通过</el-button>
+      </span>
+    </el-dialog>
+    <!--    校核驳回对话框=====================================================-->
+    <el-dialog title="确认校核驳回对话框" :visible.sync="dialogCheckRejectVisible" width="40%"
+               :close-on-click-modal="false"
+    >
+      <el-form ref="dataForm" :rules="rules" label-width="100px" size="small"
+               style="padding-right: 40px;"
+      >
+        <el-form-item label="请输入驱回理由(必填)" prop="code">
+          <el-input type="textarea" :rows="4" placeholder="请输入内容(500字以内)" v-model="check_reject_description">
+          </el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogCheckRejectVisible = false" size="small" icon="el-icon-refresh-right">取 消</el-button>
+        <el-button type="primary" icon="el-icon-check" @click="makeSureCheckReject()" size="small">确认驳回</el-button>
+      </span>
+    </el-dialog>
+    <!--    审批通过对话框=====================================================-->
+    <el-dialog title="确认技术审批通过对话框" :visible.sync="dialogApprovalPassVisible" width="40%"
+               :close-on-click-modal="false"
+    >
+      <el-form ref="dataForm" :rules="rules" label-width="100px" size="small"
+               style="padding-right: 40px;"
+      >
+        <el-form-item label="请补充说明(如果有)" prop="code">
+          <el-input type="textarea" :rows="4" placeholder="请输入内容(500字以内)" v-model="approval_pass_description">
+          </el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogApprovalPassVisible = false" size="small" icon="el-icon-refresh-right"
+        >取 消</el-button>
+        <el-button type="primary" icon="el-icon-check" @click="makeSureApprovalPass()" size="small">确认通过</el-button>
+      </span>
+    </el-dialog>
+    <!--    审批驳回对话框=====================================================-->
+    <el-dialog title="确认技术审批驳回对话框" :visible.sync="dialogApprovalRejectVisible" width="40%"
+               :close-on-click-modal="false"
+    >
+      <el-form ref="dataForm" :rules="rules" label-width="100px" size="small"
+               style="padding-right: 40px;"
+      >
+        <el-form-item label="请输入驱回理由(必填)" prop="code">
+          <el-input type="textarea" :rows="4" placeholder="请输入内容(500字以内)" v-model="approval_reject_description">
+          </el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogApprovalRejectVisible = false" size="small" icon="el-icon-refresh-right"
+        >取 消</el-button>
+        <el-button type="primary" icon="el-icon-check" @click="makeSureApprovalReject()" size="small"
+        >确认驳回</el-button>
+      </span>
+    </el-dialog>
+
+    <!--  结果从左边抽屉里展示-->
+    <el-drawer
+      :title="drawerTitle"
+      :visible.sync="drawer"
+      size="70%"
+      :before-close="handleDrawerClose"
+      :with-header="true"
+    >
+      <TrackerResult :trackerData="drawerResultData"></TrackerResult>
+    </el-drawer>
+
+    <div style="height: 300px"></div>
+  </div>
+
+</template>
+<script>
+import { getToken } from '@/utils/auth'
+import TrackerAssembles from '@/views/pages/eset/trackers2/TrackerAssembles.vue'
+import TrackerResult from '@/views/pages/eset/trackers2/TrackerResult.vue'
+import Myduty from '@/views/pages/eset/myDuty.vue'
+import mydata from '@/api/eset/mydata'
+const defaultForm = {}
+export default {
+  components: { TrackerResult, TrackerAssembles,Myduty },
+  data() {
+    return {
+      rules: {},
+      all_projects: [],
+      my_projects: [],
+      my_projects_plan: [],
+      my_check_projects_plan: [],
+      approval_plan: [],
+      activeNames: ['1'],
+      theProjectCode: '',
+      theProjectName: '',
+      thePlanCode: '',
+      theDescription: '',
+      theSubmitPlans: '',
+      dialogVisible: false,
+      checkDialogVisible: false,
+      dialogCheckPassVisible: false,
+      dialogCheckRejectVisible: false,
+      dialogApprovalPassVisible: false,
+      dialogApprovalRejectVisible: false,
+      check_pass_description: '',  //校核通过时留言
+      check_reject_description: '',  //校核驳回理由
+      approval_pass_description: '',  //技术总监通过时留言
+      approval_reject_description: '',  //技术总监驳回理由
+      spareParts: {},  //备品备件率
+      whoCheck: '',
+      thisStr: '',
+      jsonObject: {},
+      trackersInfo: [], //选择方案后tracker的信息
+      //选择框选项
+      select_option: {
+        corrosion_proofing_grade_options: [
+          { text: 'C3', value: 'C3' },
+          { text: 'C4', value: 'C4' },
+          { text: 'C5', value: 'C5' }
+        ],
+        slew_drive_inch_options: [
+          { text: '5寸1级(有gap)', value: '5寸一级减速机' },
+          { text: '5寸2级(无gap)', value: '5寸二级减速机' },
+          { text: '6寸1级(有gap)', value: '6寸一级减速机' },
+          { text: '6寸2级(无gap)', value: '6寸二级减速机' },
+          { text: '7寸', value: '7寸减速机' },
+          { text: '8寸', value: '8寸减速机' }
+        ],
+        slew_cover_if_need_options: [
+          { text: '选配', value: true },
+          { text: '不选配', value: false }
+        ],
+        power_supply_options: [
+          { text: '组串供电', value: '组串供电' },
+          { text: '小组件供电', value: '小组件供电' },
+          { text: '交流供电', value: '交流供电' }
+        ],
+        beam_brand_options: [
+          { text: '宝华', value: '宝华' },
+          { text: '烨辉', value: '烨辉' },
+          { text: '首钢', value: '首钢' }
+        ],
+        purlin_brand_options: [
+          { text: '宝华', value: '宝华' },
+          { text: '烨辉', value: '烨辉' },
+          { text: '首钢', value: '首钢' }
+        ],
+        post_galvanizin_thickness_options: [
+          { text: '≥65μm热镀锌平均', value: '65' },
+          { text: '≥85μm热镀锌平均', value: '85' },
+          { text: '≥100μm热镀锌平均', value: '100' },
+          { text: '≥120μm热镀锌平均', value: '120' }
+        ],
+        beam_galvanizin_thickness_options: [
+          { text: '≥275g/m2锌铝镁镀层', value: '275' },
+          { text: '≥310g/m2锌铝镁镀层', value: '310' },
+          { text: '≥350g/m2锌铝镁镀层', value: '350' },
+          { text: '≥450g/m2锌铝镁镀层', value: '450' },
+          { text: '≥475g/m2锌铝镁镀层', value: '475' }
+        ],
+        purlin_galvanizin_thickness_options: [
+          { text: '≥275g/m2锌铝镁镀层', value: '275' },
+          { text: '≥310g/m2锌铝镁镀层', value: '310' },
+          { text: '≥350g/m2锌铝镁镀层', value: '350' },
+          { text: '≥450g/m2锌铝镁镀层', value: '450' },
+          { text: '≥475g/m2锌铝镁镀层', value: '475' }
+        ],
+        post_type_options: [
+          { text: '桩柱一体', value: 0 },
+          { text: '带法兰', value: 1 }
+        ],
+        dumper_num_options: [
+          { text: '无阻尼', value: '0' },
+          { text: '1根', value: '1' },
+          { text: '2根', value: '2' },
+          { text: '3根', value: '3' },
+          { text: '4根', value: '4' },
+          { text: '5根', value: '5' },
+          { text: '6根', value: '6' },
+          { text: '7根', value: '7' },
+          { text: '8根', value: '8' }
+        ],
+        dumper_type_options: [
+          { text: '450-Damper', value: '450' },
+          { text: '500-Damper', value: '500' },
+          { text: '790-Damper', value: '790' }
+        ],
+        purlin_section_options: [
+          { text: '-1.4x30x30x50', value: '-1.4x30x30x50' },
+          { text: '-1.5x30x30x50', value: '-1.5x30x30x50' },
+          { text: '-1.6x30x30x50', value: '-1.6x30x30x50' },
+          { text: '-1.7x30x30x50', value: '-1.7x30x30x50' },
+          { text: '-1.8x30x30x50', value: '-1.8x30x30x50' },
+          { text: '-1.9x30x30x50', value: '-1.9x30x30x50' },
+          { text: '-2.0x30x30x50', value: '-2.0x30x30x50' },
+          { text: '-2.1x30x30x50', value: '-2.1x30x30x50' },
+          { text: '-2.2x30x30x50', value: '-2.2x30x30x50' },
+          { text: '-2.3x30x30x50', value: '-2.3x30x30x50' },
+          { text: '-2.4x30x30x50', value: '-2.4x30x30x50' },
+          { text: '-2.5x30x30x50', value: '-2.5x30x30x50' },
+          { text: '-1.4x30x30x60', value: '-1.4x30x30x60' },
+          { text: '-1.5x30x30x60', value: '-1.5x30x30x60' },
+          { text: '-1.6x30x30x60', value: '-1.6x30x30x60' },
+          { text: '-1.7x30x30x60', value: '-1.7x30x30x60' },
+          { text: '-1.8x30x30x60', value: '-1.8x30x30x60' },
+          { text: '-1.9x30x30x60', value: '-1.9x30x30x60' },
+          { text: '-2.0x30x30x60', value: '-2.0x30x30x60' },
+          { text: '-2.1x30x30x60', value: '-2.1x30x30x60' },
+          { text: '-2.2x30x30x60', value: '-2.2x30x30x60' },
+          { text: '-2.3x30x30x60', value: '-2.3x30x30x60' },
+          { text: '-2.4x30x30x60', value: '-2.4x30x30x60' },
+          { text: '-2.5x30x30x60', value: '-2.5x30x30x60' },
+          { text: '-1.4x30x30x70', value: '-1.4x30x30x70' },
+          { text: '-1.5x30x30x70', value: '-1.5x30x30x70' },
+          { text: '-1.6x30x30x70', value: '-1.6x30x30x70' },
+          { text: '-1.7x30x30x70', value: '-1.7x30x30x70' },
+          { text: '-1.8x30x30x70', value: '-1.8x30x30x70' },
+          { text: '-1.9x30x30x70', value: '-1.9x30x30x70' },
+          { text: '-2.0x30x30x70', value: '-2.0x30x30x70' },
+          { text: '-2.1x30x30x70', value: '-2.1x30x30x70' },
+          { text: '-2.2x30x30x70', value: '-2.2x30x30x70' },
+          { text: '-2.3x30x30x70', value: '-2.3x30x30x70' },
+          { text: '-2.4x30x30x70', value: '-2.4x30x30x70' },
+          { text: '-2.5x30x30x70', value: '-2.5x30x30x70' },
+          { text: '-1.4x30x30x80', value: '-1.4x30x30x80' },
+          { text: '-1.5x30x30x80', value: '-1.5x30x30x80' },
+          { text: '-1.6x30x30x80', value: '-1.6x30x30x80' },
+          { text: '-1.7x30x30x80', value: '-1.7x30x30x80' },
+          { text: '-1.8x30x30x80', value: '-1.8x30x30x80' },
+          { text: '-1.9x30x30x80', value: '-1.9x30x30x80' },
+          { text: '-2.0x30x30x80', value: '-2.0x30x30x80' },
+          { text: '-2.1x30x30x80', value: '-2.1x30x30x80' },
+          { text: '-2.2x30x30x80', value: '-2.2x30x30x80' },
+          { text: '-2.3x30x30x80', value: '-2.3x30x30x80' },
+          { text: '-2.4x30x30x80', value: '-2.4x30x30x80' },
+          { text: '-2.5x30x30x80', value: '-2.5x30x30x80' }
+        ],
+
+        purlin_length_options: [
+          { text: '450', value: '450' },
+          { text: '840', value: '840' },
+          { text: '1450', value: '1450' },
+          { text: '1650', value: '1650' }
+        ],
+        purlin_material_options: [
+          { text: 'S420GD', value: 'S420GD' },
+          { text: 'S450GD', value: 'S450GD' },
+          { text: 'S500GD', value: 'S500GD' }
+        ],
+        product_system_options: [
+          { text: 'steady单排', value: 'steady' },   //D代表Drive  R代表Row
+          { text: 'steady双联(机械)', value: 'M-steady' },  //M代表mechanical
+          { text: 'steady双联(电气)', value: 'E-steady' },  //E代表electrical
+          { text: 'strider', value: 'strider' },  //M代表Multiple
+          { text: '2P', value: '2P' }
+        ]
+      },
+
+      drawer: false,
+      drawerTitle: '无计算结果，请先计算',
+      drawerResultId: '',
+      drawerResultData: {},
+
+      trackerPriceClassfy1: [],  //按立柱，主梁，檩条，标准件，紧固件，电气&机械,其它等维度分类,内容为各价项价格明细
+      trackerPrice: [],//计算完成后收集各个支架的不含备件单价
+      trackerPriceWithSpareParts: [],//计算完成后收集各个支架的含备件单价
+
+      sortTrackerPrice: [],
+      sortTrackerPriceWithSpareParts: [],
+      pricePerWatt: [],  //瓦单价
+      pricePerWattWithSpareParts: [],  //瓦单价(含备器备件)
+
+      totalTrackerPrice: 0,    //全部支架总价
+      totalTrackerPriceWithSpareParts: 0,    //全部支架总价(含备器备件)
+      weatherStationUnitPrice: 8000//气象站单价
+
+    }
+  },
+
+  //方案的状态表，与项目的状态表完成不同
+
+  //项目状态表有：
+  //0-销售经理取项目号，项目正式立项、等待技术总监指派设计师;
+  //1-设计师指定完成，等待设计师完成方案、提交内审和技术总监批准(此时方案状态可能为0,1,2,3);
+  //2-项目设计配合完成(提交完成，此时工作流到销售部门)
+  //3-反馈项目成果(已中标、未中标、或项目终止，或项目搁置)
+
+  //方案状态表有：
+  //0-已创建(方案一保存即创建，但未提交互相校核);
+  //1-已提交给checker(check正在校对中);
+  //2-check通过并转给技术总监审批(总监正在查看);
+  //3-技术总监查看通过，转由销售总监调价(销售总监正在调价中，但未给销售经理);
+  //4-销售总监查看通过，转由项目经理提交给业主;
+  //5-已提交给业主;
+
+  filters: {
+    // 方案状态表过滤器
+    planStatusFilter(status) {
+      if (status === '0') {
+        return ''
+      } else if (status === '1') {
+        return '正在校对中'
+      } else if (status === '2') {
+        return '等待技术总监审批'
+      } else if (status === '3') {
+        return '等待销售总监处理'
+      } else if (status === '4') {
+        return '已转交销售经理'
+      } else if (status === '5') {
+        return '已提交业主'
+      } else {
+        return ''
+      }
+    },
+    projectStatusFilter(status) {
+      if (status === '0') {
+        return '已立项'
+      } else if (status === '1') {
+        return '设计中'
+      } else if (status === '2') {
+        return '已提交销售'
+      } else if (status === '3') {
+        return '已提交业主'
+      } else {
+        return ''
+      }
+    },
+    linkFilter(str,n){
+      if(typeof str !== 'string'){
+        return undefined
+      } else {
+        if(str.trim().slice(0,4) === 'http'){
+          return str.slice(0,n)
+        } else {
+          return undefined
+        }
+      }
+    }
+  },
+  computed: {
+    mydata(){
+      return mydata
+    },
+    ...mapGetters([
+      'name'
+    ]),
+
+    trackerTotalNum() {
+      let n = 0
+      this.trackersInfo.forEach((t) => {
+        n += parseInt(t.trackerNum)
+      })
+      return n
+    },
+
+    //支架所占比例
+    trackerRatio() {
+      let r = []
+      let totalNum = this.trackerTotalNum > 0 ? this.trackerTotalNum : 1  //支架总数
+      this.trackersInfo.forEach((t) => {
+        r.push(100 * parseInt(t.trackerNum) / totalNum)
+      })
+      return r
+    },
+
+    //单个支架的发电量
+    singleTrackerPvCapacity() {
+      let r = []
+      this.trackersInfo.forEach((t) => {
+        r.push(parseInt(t.pv_capacity) * parseInt(t.solar_num) / 1000)
+      })
+      return r
+    },
+    //单个种类支架的总发电量
+    sortTrackerPvCapacity() {
+      let r = []
+      this.trackersInfo.forEach((t) => {
+        r.push(parseInt(t.pv_capacity) * parseInt(t.solar_num) * parseInt(t.trackerNum) / 1000)
+      })
+      return r
+    },
+    //全部总容量
+    trackerTotalWatt() {
+      return this.sortTrackerPvCapacity.reduce((accumulator, currentValue) => {
+        return accumulator + currentValue
+      }, 0)
+    },
+    //气象站数量
+    weatherStationNum() {
+      let n = 0
+      this.trackersInfo.forEach((t) => {
+        n += parseInt(t.trackerNum)
+      })
+      return Math.ceil((n / 3))
+    },
+    weatherStationTotalPrice() {
+      return this.weatherStationNum * this.weatherStationUnitPrice
+    },
+
+    showTable() {
+      let tb = []
+      for (let i = 0; i < this.my_projects.length; i++) {
+        let a = {
+          id: this.my_projects[i].id,
+          name: this.my_projects[i].name,
+          code: this.my_projects[i].code,
+          site: this.my_projects[i].site,
+          seller: this.my_projects[i].seller,
+          designer: this.my_projects[i].designer,
+          data_link: this.my_projects[i].data_link,
+          planList: []
+        }
+        for (let j = 0; j < this.my_projects_plan.length; j++) {
+          let c = '"' + a.code + '"'
+          if (c.includes(this.my_projects_plan[j].project_code)) {
+            let b = {
+              plan_code: this.my_projects_plan[j].plan_code,
+              project_code: this.my_projects_plan[j].project_code,
+              designer: this.my_projects_plan[j].designer,
+              plan_description: this.my_projects_plan[j].plan_description.replaceAll('"', ''),
+              status: this.my_projects_plan[j].status,
+              update_time: this.my_projects_plan[j].update_time,
+              ifSubmit: this.my_projects_plan[j].status !== '0'
+            }
+            a.planList.push(b)
+          }
+        }
+        tb.push(a)
+      }
+      return tb
+    },
+    showCheckTable() {
+      let tb = []
+      for (let i = 0; i < this.my_check_projects_plan.length; i++) {
+        let a = {
+          plan_code: this.my_check_projects_plan[i].plan_code,
+          project_code: this.my_check_projects_plan[i].project_code,
+          project_name: this.my_check_projects_plan[i].project_name,
+          plan_description: this.my_check_projects_plan[i].plan_description,
+          designer: this.my_check_projects_plan[i].designer,
+          checker: this.my_check_projects_plan[i].checker,
+          data_link: this.my_check_projects_plan[i].data_link,
+          status: this.my_check_projects_plan[i].status,
+          update_time: this.my_check_projects_plan[i].update_time
+        }
+        tb.push(a)
+      }
+      console.log("tbtbtbtb=",tb)
+      return tb
+    },
+
+    showApprovalTable() {
+
+      let tb = []
+      for (let i = 0; i < this.approval_plan.length; i++) {
+        let a = {
+          plan_code: this.approval_plan[i].plan_code,
+          project_code: this.approval_plan[i].project_code,
+          project_name: this.approval_plan[i].project_name,
+          plan_description: this.approval_plan[i].plan_description,
+          designer: this.approval_plan[i].designer,
+          checker: this.approval_plan[i].checker,
+          technical_director: this.approval_plan[i].technical_director,
+          data_link: this.approval_plan[i].data_link,
+          status: this.approval_plan[i].status,
+          update_time: this.approval_plan[i].update_time
+        }
+        tb.push(a)
+      }
+      return tb
+    },
+
+  },
+  // 生命周期函数：内存准备完毕，页面尚未渲染
+  created() {
+    this.fetchMyProjectData()  //获取自己负责的项目列表
+    this.fetchMyProjectPlanData()  //获取自己负责的项目方案列表
+    this.fetchMyCheckProjectPlanData()  //获取自己负责校对的项目方案列表
+    this.fetchApprovalPlanData()   //如果是技术总监，则获取等待审批的列表
+  },
+
+  // 生命周期函数：内存准备完毕，页面渲染成功
+  mounted() {
+    // this.findAllTbProjectData()  //获取全部项目信息
+    this.aaaa()
+  },
+  methods: {
+    aaaa(){
+      var tag = document.getElementsByTagName("a");
+      for (let i = 0; i < tag.length; i++) {
+        tag[i].onclick = function(event) {
+          event.preventDefault();
+        };
+      }
+    },
+    checkPass(planCode) {
+      this.thePlanCode = planCode
+      this.dialogCheckPassVisible = true
+    },
+    checkReject(planCode) {
+      this.thePlanCode = planCode
+      this.dialogCheckRejectVisible = true
+    },
+    approvalPass(planCode) {
+      this.thePlanCode = planCode
+      this.dialogApprovalPassVisible = true
+    },
+    approvalReject(planCode) {
+      this.thePlanCode = planCode
+      this.dialogApprovalRejectVisible = true
+    },
+
+    makeSureCheckPass() {
+      console.log("$$$",process.env.VUE_APP_BASE_API + '/api/planCheckPass')
+      fetch(process.env.VUE_APP_BASE_API + '/api/planCheckPass', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: JSON.stringify(
+          this.thePlanCode
+          + 'XxXxX' + this.check_pass_description
+          + 'XxXxX' + this.name
+        )
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            this.fetchMyProjectData()  //获取自己负责的项目列表
+            this.fetchMyProjectPlanData()  //获取自己负责的项目方案列表
+            this.fetchMyCheckProjectPlanData()  //获取自己负责校对的项目方案列表
+            this.fetchApprovalPlanData()   //如果是技术总监，则获取等待审批的列表
+            alert('提交成功')
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.dialogCheckPassVisible = false
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+
+    },
+    makeSureCheckReject() {
+      console.log("$$$",process.env.VUE_APP_BASE_API + '/api/planCheckReject')
+      fetch(process.env.VUE_APP_BASE_API + '/api/planCheckReject', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: JSON.stringify(
+          this.thePlanCode
+          + 'XxXxX' + this.check_reject_description
+          + 'XxXxX' + this.name
+        )
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            this.fetchMyProjectData()  //获取自己负责的项目列表
+            this.fetchMyProjectPlanData()  //获取自己负责的项目方案列表
+            this.fetchMyCheckProjectPlanData()  //获取自己负责校对的项目方案列表
+            this.fetchApprovalPlanData()   //如果是技术总监，则获取等待审批的列表
+            alert('驳回成功')
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.dialogCheckRejectVisible = false
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+
+    },
+    makeSureApprovalPass() {
+      console.log("$$$",process.env.VUE_APP_BASE_API + '/api/planApprovalPass')
+      fetch(process.env.VUE_APP_BASE_API + '/api/planApprovalPass', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: JSON.stringify(
+          this.thePlanCode
+          + 'XxXxX' + this.approval_pass_description
+          + 'XxXxX' + this.name
+        )
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            this.fetchMyProjectData()  //获取自己负责的项目列表
+            this.fetchMyProjectPlanData()  //获取自己负责的项目方案列表
+            this.fetchMyCheckProjectPlanData()  //获取自己负责校对的项目方案列表
+            this.fetchApprovalPlanData()   //如果是技术总监，则获取等待审批的列表
+            alert('提交成功')
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.dialogApprovalPassVisible = false
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+
+    },
+    makeSureApprovalReject() {
+      console.log("$$$",process.env.VUE_APP_BASE_API + '/api/planApprovalReject')
+      fetch(process.env.VUE_APP_BASE_API + '/api/planApprovalReject', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: JSON.stringify(
+          this.thePlanCode
+          + 'XxXxX' + this.approval_reject_description
+          + 'XxXxX' + this.name
+        )
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            this.fetchMyProjectData()  //获取自己负责的项目列表
+            this.fetchMyProjectPlanData()  //获取自己负责的项目方案列表
+            this.fetchMyCheckProjectPlanData()  //获取自己负责校对的项目方案列表
+            this.fetchApprovalPlanData()   //如果是技术总监，则获取等待审批的列表
+            alert('驳回成功')
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.dialogApprovalRejectVisible = false
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+
+    showPlanDetail(planCode) {
+      fetch(process.env.VUE_APP_BASE_API + '/api/findPlanDetail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: planCode
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.thisStr = r.data
+          this.jsonObject = JSON.parse(this.thisStr)
+          this.trackersInfo = this.jsonObject.trackersInfo
+          this.spareParts = this.jsonObject.spareParts
+          this.checkDialogVisible = true
+          this.refreshAfterCaclu()
+          // console.log("666666666666",r.data)
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+
+    //弹出提交校核对话框
+    showDialog(projectName, projectCode) {
+      this.theProjectName = projectName
+      this.theProjectCode = projectCode
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]')
+      let checkboxIds = []
+
+      checkboxes.forEach(checkbox => {
+        // checkboxIds.push(checkbox.id);
+        if (checkbox.id.includes(projectCode) && checkbox.checked) {
+          checkboxIds.push(checkbox.id.replace(projectCode + '_', ''))
+        }
+      })
+      if (checkboxIds.length === 0) {
+        alert(this.theProjectName + '没有方案被选中，请重新选择后提交!')
+        return
+      }
+      this.theSubmitPlans = checkboxIds.join(',')
+      this.dialogVisible = true
+    },
+    editPlan(planCode, status, designer, ifOnlyCheck) {
+      if (!ifOnlyCheck && designer !== this.name) {
+        alert('只允许编辑自己的方案,本次操作无法继续!')
+        return
+      }
+      if (!ifOnlyCheck && status !== '0') {
+        alert('本方案当前处于校审中,无法删除。如需删除，请联系后续节点退回!')
+        return
+      }
+      this.$router.push({
+        path:'tbTrackbom',
+        query:{
+          planCode: planCode,
+          edt:ifOnlyCheck
+        }
+      })
+    },
+
+    showDeletePlan(planCode, status, designer) {
+      if (designer !== this.name) {
+        alert('只允许删除自己的方案,本次操作无法继续!')
+        return
+      }
+      if (status !== '0') {
+        alert('本方案当前处于校审中,无法删除。如需删除，请联系后续节点退回!')
+        return
+      }
+      this.$confirm('此操作将永久删除该记录, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => { // promise
+        // 操作确定，远程调用ajax
+        fetch(process.env.VUE_APP_BASE_API + '/api/deteleProjectPlan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+          },
+          body: planCode
+        })
+          .then(response => {
+            // 确保服务器响应为成功状态码
+            if (response.ok) {
+              // 获取响应体中的JSON数据
+              return response.json()
+            } else {
+              // 如果响应状态码不是2xx，抛出错误
+              throw new Error('Something went wrong on server side.')
+            }
+          })
+          .then(r => {
+            alert('删除成功')
+            this.fetchMyProjectData()  //获取自己负责的项目列表
+            this.fetchMyProjectPlanData()  //获取自己负责的项目方案列表
+          })
+          .catch(error => {
+            // 捕捉fetch过程中或处理响应时的错误
+            console.error('Error:', error)
+          })
+      }).then((response) => {
+        this.fetchData(this.page)
+        this.$message.success(response.message || '删除成功')
+      }).catch(() => {
+        this.$message.info('取消删除')
+      })
+    },
+    //计算完成后,刷新数据到页面
+    refreshAfterCaclu() {
+      let t = this.trackersInfo
+      //如果之前有数据,这里要清空
+      this.trackerPriceClassfy1 = []
+      this.trackerPrice = []
+      this.trackerPriceWithSpareParts = []
+      this.sortTrackerPrice = []
+      this.sortTrackerPriceWithSpareParts = []
+      this.pricePerWatt = []
+      this.pricePerWattWithSpareParts = []
+      this.totalTrackerPrice = 0
+      this.totalTrackerPriceWithSpareParts = 0
+
+      //按立柱，主梁，檩条，标准件，紧固件，电气&机械,其它等分类方式维度计算
+      let price = 0  //不含备件单个支架总价格
+      let priceWithSpareParts = 0  //含备件单个支架总价格
+      for (let i = 0; i < t.length; i++) {
+        let trackerNum = this.trackersInfo[i].trackerNum * 1
+        let watt = parseInt(this.trackersInfo[i].pv_capacity) * parseInt(this.trackersInfo[i].solar_num)  //每个支架的总功率
+        if (watt === 0) {
+          watt = 1
+        }  //防止被0除错误
+        let bom = t[i].resultList.bom1.concat(t[i].resultList.bom2).concat(t[i].resultList.bom3)
+        let price_post = 0
+        let price_beam = 0
+        let price_purlin = 0
+        let price_standard = 0
+        let price_fasten = 0
+        let price_electricalMechanical = 0
+        let price_other = 0
+
+        for (let j = 0; j < bom.length; j++) {
+          if (bom[j].productCategory === 'H型钢') {
+            price_post = price_post + bom[j].totalPrice * 1
+          } else if (bom[j].productCategory === '主梁') {
+            price_beam = price_beam + bom[j].totalPrice * 1
+          } else if (bom[j].productCategory === '檩条') {
+            price_purlin = price_purlin + bom[j].totalPrice * 1
+          } else if (bom[j].productCategory === '标准件') {
+            price_standard = price_standard + bom[j].totalPrice * 1
+          } else if (bom[j].productCategory === '紧固件') {
+            price_fasten = price_fasten + bom[j].totalPrice * 1
+          } else if (bom[j].productCategory === '电气&机械') {
+            price_electricalMechanical = price_electricalMechanical + bom[j].totalPrice * 1
+          } else {
+            price_other = price_other + bom[j].totalPrice * 1
+          }
+        }
+        price = price_post + price_beam + price_purlin + price_standard
+          + price_fasten + price_electricalMechanical + price_other
+        this.trackerPrice.push(price.toFixed(2))  //不含备品备件单个总价
+        this.pricePerWatt.push((price / watt).toFixed(4))
+        this.sortTrackerPrice.push((price * trackerNum).toFixed(2))//不含备品备件该种支架全部总价
+
+        this.trackerPriceClassfy1.push({
+          post: price_post,
+          beam: price_beam,
+          purlin: price_purlin,
+          standard: price_standard,
+          fasten: price_fasten,
+          electricalMechanical: price_electricalMechanical,
+          other: price_other
+        })
+        priceWithSpareParts =
+          price_post * (0.01 * this.spareParts.post + 1) +
+          price_beam * (0.01 * this.spareParts.beam + 1) +
+          price_purlin * (0.01 * this.spareParts.purlin + 1) +
+          price_standard * (0.01 * this.spareParts.standard + 1) +
+          price_fasten * (0.01 * this.spareParts.fasten + 1) +
+          price_electricalMechanical * (0.01 * this.spareParts.electricalMechanical + 1) +
+          price_other * (0.01 * this.spareParts.other + 1)
+        this.trackerPriceWithSpareParts.push(priceWithSpareParts.toFixed(2))  //含备品备件单个支架总价
+        this.pricePerWattWithSpareParts.push((priceWithSpareParts / watt).toFixed(4))
+        this.sortTrackerPriceWithSpareParts.push((priceWithSpareParts * trackerNum).toFixed(2))//含备品备件该种支架全部总价
+
+      }
+
+      this.totalTrackerPrice =
+        this.sortTrackerPrice.reduce((accumulator, currentValue) => accumulator * 1 + currentValue * 1, 0)
+      this.totalTrackerPriceWithSpareParts =
+        this.sortTrackerPriceWithSpareParts.reduce((accumulator, currentValue) => accumulator * 1 + currentValue * 1, 0)
+
+    },
+    handleDrawerClose(done) {
+      this.$confirm('确认关闭？')
+        .then(_ => {
+          done()
+        })
+        .catch(_ => {
+        })
+    },
+    drawerShowResult(tid, item) {
+      this.refreshAfterCaclu()
+      // console.log('1@@', this.trackersInfo[item])
+      // console.log('2@@', this.sortTrackerPrice[item])
+      // console.log('3@@', this.trackerPriceClassfy1[item])
+      this.drawer = true
+      let t = {}
+      for (let i = 0; i < this.trackersInfo.length; i++) {
+        if (this.trackersInfo[i].id === tid) {
+          t = this.trackersInfo[i]
+        }
+      }
+      this.drawerTitle = (item + 1) + ' ' + t.trackBrifeName + ' 计算结果'
+      this.drawerResultData = {
+        trackBrifeName: t.trackBrifeName,
+        trackerPrice: this.trackerPrice[item],
+        trackerPriceWithSpareParts: this.trackerPriceWithSpareParts[item],
+        trackerPriceClassfy1: this.trackerPriceClassfy1[item],
+        spareParts: this.spareParts,
+        bom1: t.resultList.bom1,
+        bom2: t.resultList.bom2,
+        bom3: t.resultList.bom3,
+        bomErr: t.resultList.bomErr
+      }
+    },
+    submitCheck() {
+      if (this.theSubmitPlans.length <= 1) {
+        alert('没有方案被选中，请重新选择后提交!')
+        return
+      }
+      if (this.whoCheck.length <= 1) {
+        alert('没有选择合适的校核人，请重新选择后提交!')
+        return
+      }
+      fetch(process.env.VUE_APP_BASE_API + '/api/submitPlanCheck', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: JSON.stringify(
+          this.whoCheck
+          + 'XxXxX' + this.theSubmitPlans
+          + 'XxXxX' + this.theDescription
+          + 'XxXxX' + this.theProjectCode
+          + 'XxXxX' + this.name
+        )
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.dialogVisible = false
+          this.fetchMyProjectPlanData()
+
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+      alert('方案已提交给 '+this.whoCheck+' 进行内部校核，请线下通知 '+this.whoCheck+',并耐心等待校核结果！')
+
+
+    },
+    //获取本人项目信息和编号
+    fetchMyProjectData() {
+      fetch(process.env.VUE_APP_BASE_API + '/api/findMyProject', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: this.name
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.my_projects = r.data
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+    //获取本人项目信息的所有方案
+    fetchMyProjectPlanData() {
+      fetch(process.env.VUE_APP_BASE_API + '/api/findMyProjectPlan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: this.name
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.my_projects_plan = r.data
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+    //获取本人负责校对项目信息的所有方案
+    fetchMyCheckProjectPlanData() {
+      fetch(process.env.VUE_APP_BASE_API + '/api/findMyCheckProjectPlan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: this.name
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.my_check_projects_plan = r.data
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+
+
+    //获取所有等待审批项目信息和编号
+    fetchApprovalPlanData() {
+      fetch(process.env.VUE_APP_BASE_API + '/api/fetchApprovalPlan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: this.name
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.approval_plan = r.data
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    }
+  }
+}
+</script>
+<style scoped>
+.demo-table-expand {
+  font-size: 0;
+}
+
+.demo-table-expand label {
+  width: 90px;
+  color: #99a9bf;
+}
+
+.demo-table-expand .el-form-item {
+  margin-right: 0;
+  margin-bottom: 0;
+  width: 50%;
+}
+
+table {
+  margin-left: 0px;
+  border-collapse: collapse; /* 确保边框不会重叠 */
+  border: 1px solid black; /* 设置表格边框颜色和宽度 */
+}
+
+caption {
+  text-align: left;
+  height: 30px;
+}
+
+th, td {
+  border: 1px solid black; /* 设置表格内部单元格边框颜色和宽度 */
+  text-align: center;
+}
+
+a {
+  color: #0e5ada;
+  text-decoration: underline;
+}
+link-item{
+  color: #0e5ada;
+  text-decoration: underline;
+}
+.check-bom{
+  border:none;
+  background-color: transparent;
+  cursor:pointer;
+  color: #0e5ada;
+  text-decoration: underline;
+}
+.check-bom:hover{
+  color:#6ea2d7
+}
+.check-bom:visited{
+  color: #a46ed7
+}
+
+</style>
+
+

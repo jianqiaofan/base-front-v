@@ -1,0 +1,26 @@
+阿里云静态前端部署说明（base-front-v）
+
+一、离线时间说明
+  install-remote.sh 只做两次 mv：备份当前 bom_front -> backup，再把中转目录改名为 bom_front。
+  静态文件切换通常在毫秒级；若 Nginx 未改配置，一般无需 reload。
+
+二、本机一键发布（推荐）
+  1. 在项目根目录执行：npm run build:prod
+  2. 执行：
+     powershell -ExecutionPolicy Bypass -File deploy\publish-aliyun.ps1
+  3. 按提示输入 SSH 密码（及远端 sudo 密码，若与登录密码相同）。
+  4. 脚本会上传到 /home/bom/dist_incoming_时间戳，再以 sudo 执行 install-remote.sh。
+
+三、手动步骤（与脚本等价）
+  1. scp 把整个 dist 上传到：
+     /home/bom/dist_incoming_YYYYMMDD_HHmmss/
+  2. 将 install-remote.sh 上传到服务器后执行：
+     sudo bash install-remote.sh /home/bom/dist_incoming_YYYYMMDD_HHmmss
+
+四、回滚
+  备份路径形如：/opt/bom_web/backup/bom_front_时间戳
+  sudo bash rollback-remote.sh /opt/bom_web/backup/bom_front_某时间戳
+
+五、安全说明
+  请勿把服务器密码写入脚本或提交到 Git。
+  若在聊天等渠道泄露密码，请尽快在阿里云控制台修改 SSH/实例密码，并优先改用 SSH 公钥登录。

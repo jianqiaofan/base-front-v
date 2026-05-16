@@ -1,0 +1,2528 @@
+<template>
+  <div class="bominput-container scrollable-div">
+    <!--    <div>-->
+    <!--      <scrollBar></scrollBar>-->
+    <!--    </div>-->
+    <div
+      class="head-title"
+      :class="{ 'head-title--dragging': headTitleDrag.active }"
+      :style="headTitlePanelStyle"
+    >
+      <div
+        class="head-title__drag-bar"
+        title="拖动移动面板"
+        @mousedown.stop.prevent="onHeadTitleDragStart"
+      >
+        <span class="head-title__eco-icon" aria-hidden="true" />
+        <span class="head-title__badge">{{ lgc ? '方案摘要' : 'Plan' }}</span>
+        <span class="head-title__hint">{{ lgc ? '拖拽移动' : 'Drag' }}</span>
+      </div>
+      <div class="head-title__body">
+        <p>{{ lgc ? '当前用户' : 'USER' }}：{{ name }}</p>
+        <p>{{ tsl.project_code[lgc] }}：{{ theProjectAndPlanObj.project_code }}</p>
+        <p>{{ tsl.project_name[lgc] }}：{{ theProjectAndPlanObj.project_name }}</p>
+        <p>{{ tsl.plan_description[lgc] }}：{{ theProjectAndPlanObj.plan_description }}</p>
+        <p>{{ tsl.sale_manager[lgc] }}：{{ theProjectAndPlanObj.seller }}</p>
+        <p>{{ tsl.designer[lgc] }}：{{ theProjectAndPlanObj.designer }}</p>
+      </div>
+    </div>
+    <!--    <button @click="printPlanModule">打印数据</button>-->
+    <div>
+      <div v-show="loadFielShow" style="margin-left:10px">
+        <el-upload class="upload-demo" ref="upload" accept="text/plain" multiple
+                   action="" :on-change="handleSuccess" :on-remove="handleRemove" :on-preview="handlePreview"
+                   :file-list="fileList" :auto-upload="false"
+        >
+          <el-button size="small" type="primary">{{ tsl.choose_file[lgc] }}</el-button>
+
+          <div slot="tip" class="el-upload__tip" style="margin-left: 10px;">{{ tsl.only_txt_can_be_uploaded[lgc] }}
+          </div>
+        </el-upload>
+      </div>
+      <el-button v-show="loadFielShow" style="margin-left: 10px;" size="small" type="success"
+                 @click="importDataFromTxt"
+      >{{ tsl.confirm_choose[lgc] }}
+      </el-button>
+      <el-button style="margin-left: 10px;" size="small" type="success" @click="handelLanguage">中文</el-button>
+      <!--      <el-button style="margin-left: 10px;" size="small" type="success" @click="sortTrackers">{{tsl.sort_by_str[lgc]}}</el-button>-->
+      <el-divider></el-divider>
+
+      <!--    加工厂地-->
+      <table style="width: 800px">
+        <caption style="text-align: left;">
+          <label>{{ tsl.processing_location[lgc] }}</label>
+        </caption>
+        <tr style="height: 30px">
+          <td style="text-align: left;padding-left: 10px">
+            立柱：
+            <el-radio-group v-model="module_data.process_site.post">
+              <el-radio label="国内"></el-radio>
+              <el-radio label="沙特"></el-radio>
+            </el-radio-group>
+          </td>
+          <td style="text-align: left;padding-left: 10px">
+            主梁：
+            <el-radio-group v-model="module_data.process_site.beam">
+              <el-radio label="国内"></el-radio>
+              <el-radio label="沙特"></el-radio>
+            </el-radio-group>
+          </td>
+          <td style="text-align: left;padding-left: 10px">
+            檩条：
+            <el-radio-group v-model="module_data.process_site.purlin">
+              <el-radio label="国内"></el-radio>
+              <el-radio label="沙特"></el-radio>
+            </el-radio-group>
+          </td>
+        </tr>
+      </table>
+      <el-divider></el-divider>
+      <!--    备品备件率-->
+      <table style="width: 800px">
+        <caption style="text-align: left;">
+          <label>备品备件率(%)</label>
+        </caption>
+        <tr style="height: 30px">
+          <td style="text-align: left;padding-left: 10px">
+            <span style="margin: 0 2px"><span style="padding-right: 10px">立柱</span><input type="text"
+                                                                                            style="width:42px"
+                                                                                            v-model="module_data.spareParts.post"
+            ></span>
+            <span style="margin: 0 12px"><span style="padding-right: 10px">主梁</span><input type="text"
+                                                                                             style="width:42px"
+                                                                                             v-model="module_data.spareParts.beam"
+            ></span>
+            <span style="margin: 0 12px"><span style="padding-right: 10px">檩条</span><input type="text"
+                                                                                             style="width:42px"
+                                                                                             v-model="module_data.spareParts.purlin"
+            ></span>
+            <span style="margin: 0 12px"><span style="padding-right: 10px">紧固件</span><input type="text"
+                                                                                               style="width:42px"
+                                                                                               v-model="module_data.spareParts.fasten"
+            ></span>
+            <span style="margin: 0 12px"><span style="padding-right: 10px">标准件</span><input type="text"
+                                                                                               style="width:42px"
+                                                                                               v-model="module_data.spareParts.standard"
+            ></span>
+            <span style="margin: 0 12px"><span style="padding-right: 10px">机械电器</span><input type="text"
+                                                                                                 style="width:42px"
+                                                                                                 v-model="module_data.spareParts.electricalMechanical"
+            ></span>
+            <span style="margin: 0 2px"><span style="padding-right: 10px">其它</span><input type="text"
+                                                                                            style="width:42px"
+                                                                                            v-model="module_data.spareParts.other"
+            ></span>
+          </td>
+        </tr>
+      </table>
+      <el-divider></el-divider>
+
+      <!--    tracker信息-->
+      <table>
+        <caption style="text-align: left;">
+          <label>{{ tsl.please_text_project_information[lgc] }}</label>
+        </caption>
+        <thead>
+        <tr class="thead-title">
+          <td>Tracker<br>Type</td>
+          <td style="width: 50px">{{ tsl.tracker_amount[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.solar_panel_capacity[lgc] }}</td>
+          <td style="width: 140px">{{ tsl.product_series[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.power_supply_method[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.corrosion_resistance_grade[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.post_anti_corrosion[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.beam_anti_corrosion[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.purlin_anti_corrosion[lgc] }}</td>
+          <td style="width: 70px">{{ tsl.beam_brand[lgc] }}</td>
+          <td style="width: 70px">{{ tsl.purlin_brand[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.pile_foundation_category[lgc] }}</td>
+          <td style="width:200px">{{ tsl.pile_parameters[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.slew_drive[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.slew_drive_shell[lgc] }}</td>
+          <td style="width: 100px">{{ tsl.damping_amount[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.damping_type[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.spring_damping_type[lgc] }}</td>
+          <td style="width: 80px">{{ tsl.beams_and_post_sheet[lgc] }}</td>
+        </tr>
+        </thead>
+        <tbody>
+        <!--      综合输入-->
+        <tr>
+          <td colspan="2" style="text-align: left">全部支架进行信息录入</td>
+          <td>
+            <input type="text" @change="change_pv_capacity" style="width:80px" v-model="initDefault.pv_capacity">
+          </td>
+          <td>
+            <select v-model="initDefault.product_system" @change="change_product_system" style="width: 140px">
+              <option v-for="option in select_option.product_system_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.power_supply" @change="change_power_supply" style="width: 100px">
+              <option v-for="option in select_option.power_supply_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.corrosion_proofing_grade" @change="change_corrosion_proofing_grade"
+                    style="width: 50px"
+            >
+              <option v-for="option in select_option.corrosion_proofing_grade_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.post_galvanizin_thickness" @change="change_post_galvanizin_thickness"
+                    style="width: 80px"
+            >
+              <option v-for="option in select_option.post_galvanizin_thickness_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.beam_galvanizin_thickness" @change="change_beam_galvanizin_thickness"
+                    style="width: 80px"
+            >
+              <option v-for="option in select_option.beam_galvanizin_thickness_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.purlin_galvanizin_thickness" @change="change_purlin_galvanizin_thickness"
+                    style="width: 80px"
+            >
+              <option v-for="option in select_option.purlin_galvanizin_thickness_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.beam_brand" @change="change_beam_brand" style="width: 60px">
+              <option v-for="option in select_option.beam_brand_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.purlin_brand" @change="change_purlin_brand" style="width: 60px">
+              <option v-for="option in select_option.purlin_brand_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.pile_type" @click="editPile($event,'comprehensive')" style="width: 90px">
+              <option v-for="option in select_option.pile_type_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <input type="text" style="width:100%" disabled v-model="initDefault.pile_desc">
+          </td>
+          <td>
+            <select v-model="initDefault.slew_drive_inch" @change="change_slew_drive_inch" style="width: 130px">
+              <option v-for="option in select_option.slew_drive_inch_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.slew_cover_if_need" @change="change_slew_cover_if_need" style="width: 80px">
+              <option v-for="option in select_option.slew_cover_if_need_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.dumper_num" @change="change_dumper_num" style="width: 100px">
+              <option v-for="option in select_option.dumper_num_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="initDefault.dumper_type" @change="change_dumper_type" style="width: 100px">
+              <option v-for="option in select_option.dumper_type_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <!--            <select v-model="initDefault.spring_damper_num" @change="change_spring_damper_type" style="width: 100px">-->
+            <!--              <option v-for="option in select_option.spring_damper_num_options" :key="option.value"-->
+            <!--                      :value="option.value"-->
+            <!--              >-->
+            <!--                {{ option.text }}-->
+            <!--              </option>-->
+            <!--            </select>-->
+          </td>
+          <td></td>
+        </tr>
+        <tr v-if="module_data.trackersInfo.length>0">
+          <td colspan="18" style="text-align: left">单个支架进行信息录入</td>
+        </tr>
+        </tbody>
+        <!--      各支架单独输入-->
+        <tbody v-for="t in module_data.trackersInfo" :key="t.id">
+        <tr :style="{backgroundColor:t.rowColor}">
+          <td>{{ t.trackBrifeName }}</td>
+          <td><input type="text" style="width:80px" @change="afterMoudleDataChange" v-model="t.trackerNum"></td>
+          <td><input type="text" style="width:50px" v-model="t.pv_capacity"></td>
+          <td>
+            <select v-model="t.product_system" style="width: 140px">
+              <option v-for="option in select_option.product_system_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.power_supply" style="width: 100px">
+              <option v-for="option in select_option.power_supply_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.corrosion_proofing_grade" style="width: 50px">
+              <option v-for="option in select_option.corrosion_proofing_grade_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.post_galvanizin_thickness" style="width: 80px">
+              <option v-for="option in select_option.post_galvanizin_thickness_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.beam_galvanizin_thickness" style="width: 80px">
+              <option v-for="option in select_option.beam_galvanizin_thickness_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.purlin_galvanizin_thickness" style="width: 80px">
+              <option v-for="option in select_option.purlin_galvanizin_thickness_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.beam_brand" style="width: 60px">
+              <option v-for="option in select_option.beam_brand_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.purlin_brand" style="width: 60px">
+              <option v-for="option in select_option.purlin_brand_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.pile_type" @click="editPile($event,'tracker:'+t.id)" style="width: 90px">
+              <option v-for="option in select_option.pile_type_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <input type="text" style="width:100%" v-model="t.pile_desc" disabled>
+          </td>
+          <td>
+            <select v-model="t.slew_drive_inch" style="width: 130px" @change="t_slew_drive_inch_change(t.id)">
+              <option v-for="option in select_option.slew_drive_inch_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.slew_cover_if_need" style="width: 80px">
+              <option v-for="option in select_option.slew_cover_if_need_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.dumper_num" style="width: 100px">
+              <option v-for="option in select_option.dumper_num_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+
+          <td>
+            <select v-model="t.dumper_type" style="width: 100px">
+              <option v-for="option in select_option.dumper_type_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <select v-model="t.spring_damper_num" style="width: 100px">
+              <option v-for="option in select_option.spring_damper_num_options" :key="option.value"
+                      :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+          </td>
+          <td>
+            <button @click="t.showPostBeamTable=!t.showPostBeamTable">Expand/Hide</button>
+          </td>
+        </tr>
+        <tr v-show="t.showPostBeamTable">
+          <!--          <td>t.trackBrifeName</td>-->
+          <td colspan="12">
+
+            <!--立柱明细表-->
+            <div>
+              <table style="width: 840px;">
+                <thead>
+                <tr>
+                  <td style="text-align: center; width:80px;">位置</td>
+                  <td style="text-align: center; width:80px;">驱动</td>
+                  <td style="text-align: center; width:80px;">截面</td>
+                  <td style="text-align: center; width:80px;">材质</td>
+                  <td style="text-align: center; width:60px;">高度</td>
+                  <td style="text-align: center; width:80px;">基础类型</td>
+                  <td style="text-align: center; width:200px;">基础详情</td>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr v-for="p in t.post_info_lst" :key="p.position">
+                  <td style="text-align: center;">{{ p.position|filterFix }}</td>
+                  <td style="text-align: center;">{{ p.category }}</td>
+                  <td style="text-align: center;">{{ p.section }}</td>
+                  <td style="text-align: center;">{{ p.material }}</td>
+                  <td style="text-align: center;">{{ p.height }}</td>
+                  <td style="text-align: center;">
+                    <select v-model="p.pile_type" @click="editPile($event,'post:'+t.id+'||'+p.position)">
+                      <option v-for="option in select_option.pile_type_options" :key="option.value"
+                              :value="option.value"
+                      >
+                        {{ option.text }}
+                      </option>
+                    </select>
+                  </td>
+
+                  <td style="text-align: left;">{{ p.pile_desc }}</td>
+
+                </tr>
+                </tbody>
+              </table>
+            </div>   <!--立柱明细表-->
+          </td>
+          <td colspan="7" style="vertical-align: top">
+            <!--主梁明细表-->
+            <div>
+              <table style="width: 600px;">
+                <thead>
+                <tr>
+                  <td style="width:80px;">起点</td>
+                  <td style="width:80px;">终点</td>
+                  <td style="width:166px;">截面</td>
+                  <td style="width:80px;">材质</td>
+                  <td style="width:60px;">长度</td>
+                  <td>类别</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="b in t.beam_info_lst" :key="b.start">
+                  <td>{{ b.start|filterFix }}</td>
+                  <td>{{ b.end|filterFix }}</td>
+                  <td>{{ b.section }}</td>
+                  <td>{{ b.material }}</td>
+                  <td>{{ b.length }}</td>
+                  <td style="text-align: center;">{{ b.category }}</td>
+                </tr>
+                </tbody>
+              </table>
+            </div>   <!--主梁明细表-->
+            <!--            <button @click="printTrackObj(t)">打印输入数据</button>-->
+          </td>
+        </tr>
+        </tbody>
+        <tbody>
+        <tr>
+          <td>总容量</td>
+          <td>{{ newModuleData.planCapacity/1000 }}</td>
+          <td>KW</td>
+        </tr>
+        </tbody>
+
+
+      </table>
+      <el-divider></el-divider>
+
+      <!--    檩条输入-->
+      <table>
+        <caption style="text-align: left;">
+          <label>光伏组件安装信息输入</label>
+        </caption>
+        <thead>
+        <tr>
+          <td>支架名称</td>
+          <td>檩条总根数</td>
+          <td>檩条种数</td>
+          <td style="width: 400px">截面型号/材质/长度/数量</td>
+          <td style="width: 320px">光伏板安装</td>
+          <td style="width: 100px">删除</td>
+        </tr>
+        </thead>
+        <tbody>
+        <!--单个支架檩条单独输入-->
+        <tr tr v-for="t in module_data.trackersInfo" :key="t.id" :style="{backgroundColor:t.rowColor}">
+          <td>{{ t.trackBrifeName }}</td>
+          <!--檩条总根数-->
+          <td><input type="text" style="width:80px;" v-model="t.purlinCount"></td>
+          <td>
+            <button @click="addPurlin(t.id)">add purlin</button>
+          </td>
+          <td style="text-align: left">
+            <div v-for="purlin in t.purlin_info_lst " :key="purlin.id">
+              <select v-model="purlin.section" style="width: 160px;margin-left: 10px">
+                <option v-for="option in select_option.purlin_section_options" :key="option.value"
+                        :value="option.value"
+                >
+                  {{ option.text }}
+                </option>
+              </select>
+              <select v-model="purlin.length" style="width: 60px;margin-left: 10px">
+                <option v-for="option in select_option.purlin_length_options" :key="option.value" :value="option.value">
+                  {{ option.text }}
+                </option>
+              </select>
+              <select v-model="purlin.material" style="width: 80px;margin-left: 10px">
+                <option v-for="option in select_option.purlin_material_options" :key="option.value"
+                        :value="option.value"
+                >
+                  {{ option.text }}
+                </option>
+              </select>
+              <input type="text" style="width:50px; margin-left: 10px;"
+                     v-model="purlin.amount"
+              >
+            </div>
+          </td>
+          <td style="text-align: left;">
+            <div v-for="purlin in t.purlin_info_lst " :key="purlin.id">
+              <select style="width: 120px; margin-left: 4px" v-model="purlin.installPoints">
+                <option value="4*M6">4*M6</option>
+                <option value="4*M8">4*M8</option>
+                <option value="4*M6+4*M8">4*M6+4*M8</option>
+                <option value="8*M6">8*M6</option>
+                <option value="8*M8">8*M8</option>
+              </select>
+              <select style="width: 180px; margin-left: 4px" v-model="purlin.blockNeed">
+                <option :value="true">选配组件安装垫片</option>
+                <option :value="false">不选配组件安装垫片</option>
+              </select>
+            </div>
+
+          </td>
+          <td>
+            <div v-for="purlin in t.purlin_info_lst " :key="purlin.id">
+              <button @click="deletePurlin(t.id,purlin.id)">delete</button>
+            </div>
+          </td>
+        </tr>
+
+        </tbody>
+      </table>
+      <el-divider></el-divider>
+
+      <!--    气象站信息-->
+      <table class="weather_station">
+        <caption style="text-align: left;"><label>气象站信息</label></caption>
+        <thead>
+        <tr style="height: 30px">
+          <td>序号</td>
+          <td>设备名称</td>
+          <td>规格或说明</td>
+          <td>是否选配</td>
+          <td>建议数量</td>
+          <td>数量</td>
+          <td>单价</td>
+          <td>最新价</td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="ws in module_data.weather_station" :key="ws.id" style="height: 30px">
+          <td style="width:60px;text-align: center">{{ ws.id }}</td>
+          <td style="width:120px">{{ ws.des }}</td>
+          <td style="width:240px">{{ ws.specifications }}</td>
+          <td style="width:200px">
+            <el-radio v-model="ws.is_needed" :label=true>选配</el-radio>
+            <el-radio v-model="ws.is_needed" :label=false>不选配</el-radio>
+          </td>
+          <td>{{ ws.suggest_amount }}</td>
+
+          <td style="width:340px" @click="handleWsClick">
+            <el-radio :disabled="!ws.is_needed" v-model="ws.is_accepted" :label=true>接受建议</el-radio>
+            <el-radio :disabled="!ws.is_needed" v-model="ws.is_accepted" :label=false>手工输入</el-radio>
+            <span v-show="!ws.is_accepted" style="margin-left: 20px;">数量:<input type="text" v-model="ws.amount"
+                                                                                  style="width: 50px"
+            ></span>
+          </td>
+          <td style="width:80px">{{ ws.unit_price }}</td>
+          <td style="width:80px">{{ ws.newest_price }}</td>
+        </tr>
+        <tr style="height: 40px">
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td>瓦单价：{{ weatherStationTotalPerWatt }} 元/瓦</td>
+          <td colspan="2">
+            <el-button type="primary" size="mini" @click="updateWeatherStationPrice">更新材料单价</el-button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <div style="margin-left: 20px;color: red">
+        <p>通信站及围网气象站选配规则</p>
+        <p>1、当子阵数量不大于3个时，仅勾选围网气象站，手动输入数量，考虑3-6Mw配置一套；</p>
+        <p>2、当子阵数量大于3个时，选用通信站+围网气象站方案，通信站6Mw配置一套，围网气象站30Mw配置1套；</p>
+      </div>
+      <el-divider></el-divider>
+
+      <!--    主要从计算文件中导出，少量需要手工更正的内容表-->
+
+      <table>
+        <caption style="text-align: left;">
+          <label>项目信息输入(主要从计算文件中导出，少量需要手工更正的内容表)</label>
+        </caption>
+        <thead>
+        <tr>
+          <td>Tracker Type</td>
+          <td>组件结构</td>
+          <td>组件排布</td>
+          <td>组件数量</td>
+          <td>组件串数</td>
+          <td>单板长度</td>
+          <td>单板宽度</td>
+          <td>单板厚度</td>
+          <td>驱动柱数量</td>
+          <td>组件最小离地</td>
+          <td>指定柱距</td>
+          <td>是否通铺</td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="t in module_data.trackersInfo" :key="t.id">
+          <td>{{ t.trackBrifeName }}</td>
+          <td>{{ t.product_system }}</td>
+          <td>{{ t.solar_list }}</td>
+          <td>{{ t.solar_num }}</td>
+          <td>{{ t.pvStringNum }}</td>
+          <td>{{ t.pv_length }}</td>
+          <td>{{ t.pv_width }}</td>
+          <td>{{ t.pv_thickness }}</td>
+          <td>{{ t.slew_count }}</td>
+          <td>{{ t.h_min }}</td>
+          <td>{{ t.dis }}</td>
+          <td>{{ t.pv_iftp }}</td>
+        </tr>
+
+        </tbody>
+      </table>
+
+      <div class="summary" v-if="this.newModuleData.planTrice>0">
+        <!--        <SummaryPlan :summaryData="summaryData"></SummaryPlan>-->
+        <h2>Summary Result</h2>
+        <el-table
+          :data="this.newModuleData.summaryData"
+          border
+          style="width: 1800px"
+        >
+          <el-table-column type="index" label="序号" width="50" :index="indexMethod"></el-table-column>
+          <el-table-column prop="trackBrifeName" label="型号"></el-table-column>
+          <el-table-column prop="trackerNum" label="数量(套)" width="100"></el-table-column>
+          <el-table-column prop="trackerNumRatio" label="占比%" width="100" :formatter="formatNumber3"
+          ></el-table-column>
+          <el-table-column prop="trackerWeight" label="单套重量(kg)" width="120" :formatter="formatNumber3"
+          ></el-table-column>
+          <el-table-column prop="trackerCapacity" label="容量(kW)" width="130" :formatter="formatNumber3"
+          ></el-table-column>
+          <el-table-column prop="trackerTotalWeight" label="总重量(kg)" width="160" :formatter="formatNumber3"
+          ></el-table-column>
+          <el-table-column prop="trackerTotalCapacity" label="总容量(kW)" width="150" :formatter="formatNumber3"
+          ></el-table-column>
+          <el-table-column prop="trackerPrice" label="单套价格" width="100" :formatter="formatNumber2"
+          ></el-table-column>
+          <el-table-column prop="trackerTotalPrice" label="总价格" width="160" :formatter="formatNumber2"
+          ></el-table-column>
+          <el-table-column prop="pricePerWatt" label="瓦单价" width="100" :formatter="formatNumber6"></el-table-column>
+          <el-table-column prop="trackerPriceSpare" label="单套价格(含)" width="120" :formatter="formatNumber2"
+          ></el-table-column>
+          <el-table-column prop="trackerTotalPriceSpare" label="总价格(含)" width="160" :formatter="formatNumber2"
+          ></el-table-column>
+          <el-table-column prop="pricePerWattSpare" label="瓦单价(含)" width="100" :formatter="formatNumber6"
+          ></el-table-column>
+        </el-table>
+        <p style="color: red">* (含) 表示此数据是含有备品备件的数据</p>
+      </div>
+
+      <el-divider></el-divider>
+
+
+      <el-row>
+        <el-button type="primary" @click="submitCalculate" :disabled="false" style="margin-left: 10px;">
+          {{ tsl.calculate_price[lgc] }}
+        </el-button>
+        <el-button v-if="saveable" type="warning" @click="saveOrUpdatePlan">
+          {{ lgc ? '保存方案' : 'Save Plan' }}
+        </el-button>
+      </el-row>
+      <el-divider></el-divider>
+      <table>
+        <caption style="text-align: left;">
+          <label>计算结果及Bom清单(sum)</label>
+        </caption>
+        <thead>
+        <tr>
+          <td style="width: 60px;">序号</td>
+          <td style="width: 150px;">支架名称</td>
+          <td>操作</td>
+        </tr>
+        </thead>
+        <tbody>
+        <!--总体结果展示-->
+        <tr v-for="(t,item) in module_data.trackersInfo" :key="t.id" v-show="t.trackerNum>0">
+          <td>{{ item + 1 }}</td>
+          <td>{{ t.trackBrifeName }}</td>
+          <td style="text-align: left">
+            <el-button @click="getDrawerTracker(t.id)" type="primary" size="mini" :disabled="!t.ifCalculated">查看结果
+            </el-button>
+            <span v-if="t.resultList.bomErr !== undefined && t.resultList.bomErr.length>0" style="color: red">计算有异常,请点击查看</span>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <el-divider></el-divider>
+      <el-row>
+        <el-button type="primary" @click="showPriceTable=!showPriceTable" :disabled="false" style="margin-left: 10px;">
+          显示价格明细表
+        </el-button>
+      </el-row>
+      <div class="summary-pirce" v-if="showPriceTable">
+        <el-divider></el-divider>
+        <h2>产品价格表</h2>
+        <el-table
+          :data="newModuleData.priceMsg"
+          border
+          :highlight-current-row="true"
+          height="1000px"
+          style="width: 2000px"
+        >
+          <el-table-column type="index" label="序号" width="50" :index="indexMethod"></el-table-column>
+          <!--      <el-table-column prop="priceId" label="材料id"></el-table-column>-->
+          <el-table-column prop="productCategory" label="材料类别" width="150"></el-table-column>
+          <el-table-column prop="name" label="材料名称" width="200"></el-table-column>
+          <el-table-column label="成本明细" width="120">
+            <template slot-scope="scope">
+              <el-popover trigger="hover" placement="top">
+                <div style="max-height: 800px;overflow-y: scroll;">
+                  <template v-if="scope.row.priceDetailObj.adjustMsg !== undefined">
+                    <div v-for="ad in scope.row.priceDetailObj.adjustMsg" :key="ad.id">
+                      <p>调后价: {{ ad.new_price }}</p>
+                      <p>调价人: {{ ad.price_adjuster }}</p>
+                      <p>调价原因: {{ ad.reason }}</p>
+                      <p>调价日期: {{ ad.create_time_local }}</p>
+                      <p>------------------------------------------------------------</p>
+                    </div>
+                  </template>
+                </div>
+                <p>材料名称: {{ scope.row.name }}</p>
+                <p>
+                  成本价: <span style="color: red;margin-right: 20px">{{ scope.row.costPrice }}</span>
+                  <span v-if="scope.row.priceDetailObj.adjustMsg !== undefined">原始价: {{
+                      scope.row.systemPrice
+                    }}</span>
+                </p>
+                <p v-if="scope.row.priceDetailObj.rawFee>0">原材料价: {{ scope.row.priceDetailObj.rawFee }}</p>
+                <p v-if="scope.row.priceDetailObj.utilizationRate<1">利用率: {{
+                    scope.row.priceDetailObj.utilizationRate
+                  }}</p>
+                <p v-if="scope.row.priceDetailObj.surfaceFee>0">表面处理费: {{
+                    scope.row.priceDetailObj.surfaceFee
+                  }}</p>
+                <p v-if="scope.row.priceDetailObj.processingFee>0">加工费: {{
+                    scope.row.priceDetailObj.processingFee
+                  }}</p>
+                <p v-if="scope.row.priceDetailObj.packagingFee>0">包装费: {{
+                    scope.row.priceDetailObj.packagingFee
+                  }}</p>
+                <div slot="reference" class="name-wrapper">
+                  <el-tag size="medium">{{ scope.row.costPrice }}<span
+                    v-if="scope.row.priceDetailObj.adjustMsg !== undefined" style="color: red"
+                  >*</span></el-tag>
+                </div>
+              </el-popover>
+
+            </template>
+
+          </el-table-column>
+          <el-table-column label="调价">
+            <template slot-scope="scope">
+              <el-button size="mini" @click="priceTableHandleEdit(scope.row)">调价</el-button>
+            </template>
+          </el-table-column>
+          <el-table-column prop="priceMethod" label="计价方式" width="90"></el-table-column>
+
+          <el-table-column prop="unit" label="单位" width="60"></el-table-column>
+          <el-table-column prop="unitPrice" label="单价" width="100" :formatter="formatNumber2"></el-table-column>
+          <el-table-column prop="totalAmount" label="数量" width="90"></el-table-column>
+          <el-table-column prop="totalPrice" label="总价" width="150" :formatter="formatNumber2"></el-table-column>
+          <el-table-column prop="specification" label="规格" width="220"></el-table-column>
+          <el-table-column prop="material" label="材质" width="200"></el-table-column>
+          <el-table-column prop="surfaceTreatment" label="表面处理" width="200"></el-table-column>
+          <el-table-column prop="productCode" label="材料编号" width="200"></el-table-column>
+          <!--      <el-table-column prop="partNo" label="零件号" width="120"></el-table-column>-->
+          <el-table-column prop="processSite" label="生产地" width="80"></el-table-column>
+          <el-table-column prop="weightPerMater" label="米重" width="80" :formatter="formatNumber3"></el-table-column>
+
+
+        </el-table>
+
+      </div>
+
+
+      <!--      计算结果-->
+
+      <!--    展示summary-->
+      <!--      <el-button type="warning" @click="showPriceDetail">显示详细信息</el-button>-->
+      <div v-if="showPriceAndWightDetail">
+        <SummaryPile :mdObj="module_data" :trackerCategory="module_data.trackersInfo.length"></SummaryPile>
+        <el-divider></el-divider>
+        <SummaryWeight :mdObj="module_data" :trackerCategory="module_data.trackersInfo.length"></SummaryWeight>
+        <SummaryPrice v-for="(priceMsg,item) in priceMsgs" :priceMsg="priceMsg" :key="item"></SummaryPrice>
+        <el-divider></el-divider>
+      </div>
+      <!--    展示价格调整页面-->
+      <el-divider></el-divider>
+      <el-row>
+        <!--        <el-button type="warning" @click="showAdjustPriceTable">{{ showAdjustButtonValue }}</el-button>-->
+      </el-row>
+      <div v-if="this.adjustPriceIfShow">
+        <PriceAdjust :theWholePlan="module_data" :systemPrice="priceIdObj" :receive="receiveFromAdjust"></PriceAdjust>
+        <el-divider></el-divider>
+      </div>
+      <!--      <ResultComponetTotal :tcp="totalComponets"></ResultComponetTotal>-->
+      <!--      &lt;!&ndash;    展示componets分类表&ndash;&gt;-->
+      <!--      <el-divider></el-divider>-->
+      <!--      <ResultComponets :cp="categoryComponets"></ResultComponets>-->
+
+      <!--  结果从左边抽屉里展示-->
+      <el-drawer
+        :title="drawerTitle"
+        :visible.sync="drawer"
+        size="88%"
+        :before-close="handleDrawerClose"
+        :with-header="true"
+        :append-to-body="true"
+        :destroy-on-close="true"
+      >
+        <TrackerResult :trackerObj="drawerTracker"></TrackerResult>
+      </el-drawer>
+
+      <div style="height: 200px"></div>
+      <el-dialog title="编辑桩参数" :visible.sync="pileDialogVisible" width="740px" :close-on-click-modal="true"
+                 :modal="false"
+      >
+        <div v-if="thePileType === 0">
+          <PileType0 :receive="receive" :scope="thePileScope"/>
+        </div>
+        <div v-if="thePileType === 1">
+          <PileType1 :receive="receive" :scope="thePileScope"/>
+        </div>
+        <div v-if="thePileType === 2">
+          <PileType2 :receive="receive" :scope="thePileScope"/>
+        </div>
+        <div v-if="thePileType === 3">
+          <PileType3 :receive="receive" :scope="thePileScope"/>
+        </div>
+      </el-dialog>
+    </div>
+
+    <div class="adjust-price">
+      <el-dialog title="调价信息" :visible.sync="dialogVisiblePriceAdjust" width="30%" :modal="false"
+                 :close-on-click-modal="false"
+      >
+        <!--        <span>{{thePriceAdjust}}</span>&ndash;&gt;-->
+        <el-form ref="dataForm" :model="newPriceObj" :rules="rules" label-width="100px" size="small"
+                 style="padding-right: 40px;"
+        >
+          <el-form-item label="材料名称" prop="name">{{ thePriceAdjust.name }}</el-form-item>
+          <el-form-item label="计价方式" prop="name">{{ thePriceAdjust.priceMethod }}</el-form-item>
+          <el-form-item label="当前价格" prop="name"><span style="color: red">{{ thePriceAdjust.costPrice }}</span>
+          </el-form-item>
+<!--          <el-form-item label="方案编号" prop="name">-->
+<!--            <el-input v-model="newPriceObj.plan_code"/>-->
+<!--          </el-form-item>-->
+<!--          <el-form-item label="材料ID" prop="name">-->
+<!--            <el-input v-model="newPriceObj.price_id"/>-->
+<!--          </el-form-item>-->
+          <el-form-item label="新 价 格" prop="name">
+            <el-input v-model="newPriceObj.new_price"/>
+          </el-form-item>
+          <el-form-item label="调价原因" prop="name">
+            <el-input v-model="newPriceObj.reason"/>
+          </el-form-item>
+<!--          <el-form-item label="改价人" prop="name">-->
+<!--            <el-input v-model="newPriceObj.price_adjuster"/>-->
+<!--          </el-form-item>-->
+
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisiblePriceAdjust = false" size="small" icon="el-icon-refresh-right">取 消</el-button>
+        <el-button type="primary" icon="el-icon-check" @click="saveAdjustPrice()" size="small">确 定</el-button>
+      </span>
+      </el-dialog>
+    </div>
+
+
+  </div>
+
+</template>
+
+<script>
+import api from '@/api/system/sysUser'
+import planUtils from '@/views/pages/eset/trackers2/utils/planUtils.js'
+import { mapGetters } from 'vuex'
+import { getToken } from '@/utils/auth'
+import apiTracker from '@/views/pages/eset/trackers2/utils/apiTracker2.js'
+import SummaryPile from '@/views/pages/eset/trackers2/SummaryPile.vue'
+import SummaryWeight from '@/views/pages/eset/trackers2/SummaryWeight.vue'
+import SummaryPrice from '@/views/pages/eset/trackers2/SummaryPrice.vue'
+import PriceAdjust from '@/views/pages/eset/trackers2/PriceAdjust.vue'
+import ScrollBar from '@/views/pages/eset/trackers2/ScrollBar.vue'
+// import ResultComponets from '@/views/pages/eset/trackers2/ResultComponets.vue'
+// import ResultComponetTotal from '@/views/pages/eset/trackers2/ResultComponetTotal.vue'
+import TrackerResult from '@/views/pages/eset/trackers2/TrackerResult.vue'
+import PileType0 from '@/views/pages/eset/trackers2/PileType0.vue'
+import PileType1 from '@/views/pages/eset/trackers2/PileType1.vue'
+import PileType2 from '@/views/pages/eset/trackers2/PileType2.vue'
+import PileType3 from '@/views/pages/eset/trackers2/PileType3.vue'
+import SummaryPlan from '@/views/pages/eset/trackers2/SummaryPlan.vue'
+import {
+  Plan,
+  Tracker,
+  getPriceIds,
+  getSummarysPrice, getPlanTotalCapacity
+} from '@/views/pages/eset/trackers2/utils/classPlan.js'
+import TbStudentSelect from '@/views/pages/business/tbCourseTbStudentSelect.vue'
+
+export default {
+  name: 'TrackerIndex',
+  components: {
+    TbStudentSelect,
+    TrackerResult, PriceAdjust,
+    SummaryPrice, SummaryWeight, ScrollBar, SummaryPile, SummaryPlan,
+    PileType0, PileType1, PileType2, PileType3
+  },
+  data() {
+    return {
+      thePlanCode: '',
+      priceIdObj: {},  //存放调价信息
+      theProjectAndPlanObj: {},
+      adjustPriceIfShow: false,  //控制调价是否显示
+      showAdjustButtonValue: '显示调价窗口',
+      designerAdjustPriceMsg: {}, //设计师调价信息
+      pileDialogVisible: false,
+      thePileScope: 'comprehensive',
+      thePileType: 0,  //用来控制pileDialog话框显示哪一个桩类型
+      prePileType: 2,  //用来记录前一个桩的状态，如果在桩控件点了确认，则更新prePileType，否则不更新
+      thePileObj0: {},
+      thePileObj1: {},
+      thePileObj2: {},
+      thePileObj3: {},
+      thePileDesc0: '',
+      thePileDesc1: '',
+      thePileDesc2: '',
+      thePileDesc3: '',
+
+      module_data: new Plan(),//统领全局的变量 module_data
+      adjustMsg: [],//方案调价信息
+      saveDisbled: true,
+      drawer: false,
+      drawerTitle: '无计算结果，请先计算',
+      drawerResultId: '',
+      drawerResultData: {},
+      drawerTracker: {},  //传给TrackerResult的内容
+      planPriceAdjust: {},  //调价信息
+      priceMsgs: [],//详细的价格信息
+      showPriceAndWightDetail: false,
+      showPriceTable: false,//显示纯粹的价格表
+
+      fileList: [],
+      results: [],  //用于保存计算结果
+      bomResults: [],  //用来保存后端传回的结果。只接收单个支架的bom表，后面结果展示全部在前端完成
+
+      trackerPriceClassfy1: [],  //按立柱，主梁，檩条，标准件，紧固件，电气&机械,其它等维度分类,内容为各价项价格明细
+      dialogVisible: false,  //保存窗口
+      my_projects: [],
+      rules: {},
+      sysUser: {},
+      radio_save: '1',
+      bomFinished: 0,  //已成功从后台获取bom表的支架种数
+      loadFielShow: true,  //如果是编辑,则不允许再导入文件
+      categoryComponets: [],//按Componets 分类的数据
+      totalComponets: [],//按Componets 分类的数据总表
+
+      dialogVisiblePriceAdjust: false,  //调价对话框
+      thePriceAdjust: {},  //正在操作的调价对象
+      newPriceObj: {
+        plan_code: '',
+        price_id: '',
+        new_price: '',
+        reason: '',
+        price_adjuster: ''
+      },
+      //初始的默认值
+      initDefault: {
+        beam_brand: '宝华',
+        purlin_brand: '宝华',
+        post_galvanizin_thickness: '65',
+        beam_galvanizin_thickness: '275',
+        purlin_galvanizin_thickness: '275',
+        product_system: 'single_row',
+        corrosion_proofing_grade: 'C3',
+        slew_drive_inch: '5寸一级减速机',
+        slew_cover_if_need: false,
+        power_supply: '小组件供电',
+        dumper_num: '2pairs',
+        spring_damper_num: '0',
+        dumper_type: '450',
+        pile_type: 2,  //桩型  0-桩柱一体 1-地脚螺栓 2-PHC管桩 3-钢桩
+        pile_obj: { pile_type: 2 }, //桩的对象（给后台进行Bom表生成）
+        pile_desc: 'PHC管桩', //桩的文字描述（给用户看的）
+        pv_capacity: 630  //光伏容量
+      },
+
+      //选择框选项
+      select_option: {
+        corrosion_proofing_grade_options: [
+          { text: 'C3', value: 'C3' },
+          { text: 'C4', value: 'C4' },
+          { text: 'C5', value: 'C5' }
+        ],
+        slew_drive_inch_options: [
+          { text: '5 inch with gap', value: '5寸一级减速机' },
+          { text: '5 inch no gap', value: '5寸二级减速机' },
+          { text: '6 inch with gap', value: '6寸一级减速机' },
+          // { text: '6寸2级(无gap)', value: '6寸二级减速机' },  //甲方说不考虑这个
+          { text: '7 inch', value: '7寸减速机' },
+          { text: '8 inch', value: '8寸减速机' }
+        ],
+        slew_cover_if_need_options: [
+          { text: 'Need', value: true },
+          { text: 'No need', value: false }
+        ],
+        power_supply_options: [
+          { text: '小组件供电', value: '小组件供电' },
+          { text: '组串供电', value: '组串供电' },
+          { text: '交流供电', value: '交流供电' }
+        ],
+        beam_brand_options: [
+          { text: '宝华', value: '宝华' },
+          { text: '烨辉', value: '烨辉' },
+          { text: '首钢', value: '首钢' }
+        ],
+        purlin_brand_options: [
+          { text: '宝华', value: '宝华' },
+          { text: '烨辉', value: '烨辉' },
+          { text: '首钢', value: '首钢' }
+        ],
+        post_galvanizin_thickness_options: [
+          { text: '≥65μm热镀锌平均', value: '65' },
+          { text: '≥85μm热镀锌平均', value: '85' },
+          { text: '≥100μm热镀锌平均', value: '100' },
+          { text: '≥120μm热镀锌平均', value: '120' }
+        ],
+        beam_galvanizin_thickness_options: [
+          { text: '≥275g/m2锌铝镁镀层', value: '275' },
+          { text: '≥310g/m2锌铝镁镀层', value: '310' },
+          { text: '≥350g/m2锌铝镁镀层', value: '350' },
+          { text: '≥450g/m2锌铝镁镀层', value: '450' },
+          { text: '≥475g/m2锌铝镁镀层', value: '475' }
+        ],
+        purlin_galvanizin_thickness_options: [
+          { text: '≥275g/m2锌铝镁镀层', value: '275' },
+          { text: '≥310g/m2锌铝镁镀层', value: '310' },
+          { text: '≥350g/m2锌铝镁镀层', value: '350' },
+          { text: '≥450g/m2锌铝镁镀层', value: '450' },
+          { text: '≥475g/m2锌铝镁镀层', value: '475' }
+        ],
+        pile_type_options: [
+          { text: '桩柱一体', value: 0 },
+          { text: '地脚螺栓', value: 1 },
+          { text: 'PHC管桩', value: 2 },
+          { text: '钢桩', value: 3 }
+        ],
+        dumper_num_options: [
+          { text: 'no damper', value: '0' },
+          { text: '1 pair', value: '1pairs' },
+          { text: '2 pairs', value: '2pairs' },
+          { text: '3 pairs', value: '3pairs' },
+          { text: '4 pairs', value: '4pairs' },
+          { text: '5 pairs', value: '5pairs' },
+          { text: '6 pairs', value: '6pairs' },
+          { text: '7 pairs', value: '7pairs' },
+          { text: '8 pairs', value: '8pairs' },
+          { text: '9 pairs', value: '9pairs' },
+          { text: '10 pairs', value: '10pairs' },
+          { text: '1 set', value: '1' },
+          { text: '2 sets', value: '2' },
+          { text: '3 sets', value: '3' },
+          { text: '4 sets', value: '4' },
+          { text: '5 sets', value: '5' },
+          { text: '6 sets', value: '6' },
+          { text: '7 sets', value: '7' },
+          { text: '8 sets', value: '8' },
+          { text: '9 sets', value: '9' },
+          { text: '10 sets', value: '10' },
+          { text: '11 sets', value: '11' },
+          { text: '12 sets', value: '12' },
+          { text: '13 sets', value: '13' },
+          { text: '14 sets', value: '14' },
+          { text: '15 sets', value: '15' },
+          { text: '16 sets', value: '16' },
+          { text: '17 sets', value: '17' },
+          { text: '18 sets', value: '18' },
+          { text: '19 sets', value: '19' },
+          { text: '20 sets', value: '20' }
+        ],
+        spring_damper_num_options: [
+          { text: 'no spring damper', value: '0' },
+          { text: '1 pair', value: '1pairs' },
+          { text: '2 pairs', value: '2pairs' },
+          { text: '1 set', value: '1' },
+          { text: '2 sets', value: '2' },
+          { text: '3 sets', value: '3' },
+          { text: '4 sets', value: '4' }
+        ],
+        dumper_type_options: [
+          { text: '450-Damper', value: '450' },
+          { text: '500-Damper', value: '500' },
+          { text: '790-Damper', value: '790' }
+        ],
+        purlin_section_options: [
+          { text: '-1.4x30x30x50', value: '-1.4x30x30x50' },
+          { text: '-1.5x30x30x50', value: '-1.5x30x30x50' },
+          { text: '-1.6x30x30x50', value: '-1.6x30x30x50' },
+          { text: '-1.7x30x30x50', value: '-1.7x30x30x50' },
+          { text: '-1.8x30x30x50', value: '-1.8x30x30x50' },
+          { text: '-1.9x30x30x50', value: '-1.9x30x30x50' },
+          { text: '-2.0x30x30x50', value: '-2.0x30x30x50' },
+          { text: '-2.1x30x30x50', value: '-2.1x30x30x50' },
+          { text: '-2.2x30x30x50', value: '-2.2x30x30x50' },
+          { text: '-2.3x30x30x50', value: '-2.3x30x30x50' },
+          { text: '-2.4x30x30x50', value: '-2.4x30x30x50' },
+          { text: '-2.5x30x30x50', value: '-2.5x30x30x50' },
+          { text: '-1.4x30x30x60', value: '-1.4x30x30x60' },
+          { text: '-1.5x30x30x60', value: '-1.5x30x30x60' },
+          { text: '-1.6x30x30x60', value: '-1.6x30x30x60' },
+          { text: '-1.7x30x30x60', value: '-1.7x30x30x60' },
+          { text: '-1.8x30x30x60', value: '-1.8x30x30x60' },
+          { text: '-1.9x30x30x60', value: '-1.9x30x30x60' },
+          { text: '-2.0x30x30x60', value: '-2.0x30x30x60' },
+          { text: '-2.1x30x30x60', value: '-2.1x30x30x60' },
+          { text: '-2.2x30x30x60', value: '-2.2x30x30x60' },
+          { text: '-2.3x30x30x60', value: '-2.3x30x30x60' },
+          { text: '-2.4x30x30x60', value: '-2.4x30x30x60' },
+          { text: '-2.5x30x30x60', value: '-2.5x30x30x60' },
+          { text: '-1.4x30x30x70', value: '-1.4x30x30x70' },
+          { text: '-1.5x30x30x70', value: '-1.5x30x30x70' },
+          { text: '-1.6x30x30x70', value: '-1.6x30x30x70' },
+          { text: '-1.7x30x30x70', value: '-1.7x30x30x70' },
+          { text: '-1.8x30x30x70', value: '-1.8x30x30x70' },
+          { text: '-1.9x30x30x70', value: '-1.9x30x30x70' },
+          { text: '-2.0x30x30x70', value: '-2.0x30x30x70' },
+          { text: '-2.1x30x30x70', value: '-2.1x30x30x70' },
+          { text: '-2.2x30x30x70', value: '-2.2x30x30x70' },
+          { text: '-2.3x30x30x70', value: '-2.3x30x30x70' },
+          { text: '-2.4x30x30x70', value: '-2.4x30x30x70' },
+          { text: '-2.5x30x30x70', value: '-2.5x30x30x70' },
+          { text: '-1.4x30x30x80', value: '-1.4x30x30x80' },
+          { text: '-1.5x30x30x80', value: '-1.5x30x30x80' },
+          { text: '-1.6x30x30x80', value: '-1.6x30x30x80' },
+          { text: '-1.7x30x30x80', value: '-1.7x30x30x80' },
+          { text: '-1.8x30x30x80', value: '-1.8x30x30x80' },
+          { text: '-1.9x30x30x80', value: '-1.9x30x30x80' },
+          { text: '-2.0x30x30x80', value: '-2.0x30x30x80' },
+          { text: '-2.1x30x30x80', value: '-2.1x30x30x80' },
+          { text: '-2.2x30x30x80', value: '-2.2x30x30x80' },
+          { text: '-2.3x30x30x80', value: '-2.3x30x30x80' },
+          { text: '-2.4x30x30x80', value: '-2.4x30x30x80' },
+          { text: '-2.5x30x30x80', value: '-2.5x30x30x80' }
+        ],
+
+        purlin_length_options: [
+          { text: '450', value: '450' },
+          { text: '840', value: '840' },
+          { text: '1450', value: '1450' },
+          { text: '1650', value: '1650' },
+          { text: '1980', value: '1980' }
+        ],
+        purlin_material_options: [
+          { text: 'S420GD', value: 'S420GD' },
+          { text: 'S450GD', value: 'S450GD' },
+          { text: 'S500GD', value: 'S500GD' }
+        ],
+        product_system_options: [
+          { text: '2Gen-single row', value: 'single_row' },   //D代表Drive  R代表Row
+          { text: '2Gen-double rows(M)', value: 'double_row-M' },  //M代表mechanical
+          { text: '2Gen-double rows(E)', value: 'double_row-E' },  //E代表electrical
+          { text: '3Gen', value: '3Gen_tracker' },   //3代产品
+        ]
+      },
+
+      //翻译
+      lgc: 0,  //languageCode,翻译编码 0-英文，1-中文 fdsa
+      tsl: {
+        project_code: ['Project Code', '项目编号'],
+        plan_description: ['Plan Description', '方案名称'],
+        sale_manager: ['Sale Manager', '销售经理'],
+        designer: ['Designer', '设计师'],
+        choose_file: ['Choose File', '选择文件'],
+        confirm_choose: ['Confirm Choose', '确定选择'],
+        sort_by_str: ['Sort By Str', '按串排序'],
+        calculate_price: ['Calculate Price', '提交计算'],
+        save_plan: ['Save Plan', '保存方案'],
+        project_name: ['Project Name', '项目名称'],
+        please_text_project_information: ['Project Information', '项目信息输入(需要手工输入)'],
+        processing_location: ['Processing location', '加工地'],
+        only_txt_can_be_uploaded: ['Only txt format files can be uploaded', '只能上传txt文件'],
+        tracker_amount: ['Tracker Qty', '组件套数'],
+        solar_panel_capacity: ['Module wattage', '组件容量'],
+        product_series: ['Product Series', '产品系列'],
+        power_supply_method: ['Power supply mode', '供电方式'],
+        corrosion_resistance_grade: ['Atmospheric corrosion category', '防腐等级'],
+        post_anti_corrosion: ['Post surface treatment', '立柱防腐'],
+        beam_anti_corrosion: ['Beam surface treatment', '主梁防腐'],
+        purlin_anti_corrosion: ['Purlin surface treatment', '檩条防腐'],
+        beam_brand: ['Beam Manuf.', '主梁品牌'],
+        purlin_brand: ['Purlin Manuf.', '檩条品牌'],
+        pile_foundation_category: ['Foundation type', '桩基类别'],
+        pile_parameters: ['Pile specifications', '桩参数'],
+        slew_drive: ['Slew drive', '减速机'],
+        slew_drive_shell: ['Slew drive cover', '减速机罩'],
+        damping_amount: ['Damper Qty', '阻尼套数'],
+        damping_type: ['Damper type', '阻尼型号'],
+        spring_damping_type: ['Spring Damping Qty', '弹簧阻尼'],
+        beams_and_post_sheet: ['Component list', '构件列表'],
+        spare_parts_ratio: ['Spare Parts Ratio', '备品备件率'],
+        spare_parts_price_per_watt: ['Spare Parts Price Per Watt', '备品备件瓦单价'],
+        drives_system: ['Drives System', '驱动系统'],
+        control_system: ['Control System', '控制系统'],
+        damper: ['Damper', '阻尼器'],
+        post: ['Post', '立柱'],
+        torque_tube: ['Torque Tube', '主梁'],
+        purlin: ['Purlin', '檩条'],
+        fasten: ['Fasten', '紧固件'],
+        standard_part: ['Standard Part', '标准件'],
+        stamping_part: ['Stamping Part', '冲压件'],
+        casting_part: ['Casting Part', '铸造件'],
+        electrical_mechanical: ['Electrical Mechanical', '机械&电气'],
+        other: ['Other', '其它']
+      },
+
+      headTitlePos: { left: 0, top: 600 },
+      headTitleDrag: {
+        active: false,
+        startX: 0,
+        startY: 0,
+        originLeft: 0,
+        originTop: 0,
+      },
+    }
+  },
+
+  computed: {
+    ...mapGetters([
+      'name'
+    ]),
+
+    headTitlePanelStyle() {
+      return {
+        left: `${this.headTitlePos.left}px`,
+        top: `${this.headTitlePos.top}px`,
+      }
+    },
+
+    newModuleData() {
+      // let adjustMsg = [
+      //   {
+      //     plan_code: '1776402664879',
+      //     price_id: '01-2-SlewDrive-5inch1Class-0.0',
+      //     new_price: '900',
+      //     reason: '测试减速机调价1',
+      //     price_adjuster: '范建桥',
+      //     create_time: '1776931295813',
+      //   },
+      //   {
+      //     plan_code: '1776402664879',
+      //     price_id: '01-2-SlewDrive-5inch1Class-0.0',
+      //     new_price: '1000',
+      //     reason: '测试减速机调价2',
+      //     price_adjuster: '范建桥',
+      //     create_time: '1796933195823',
+      //   },
+      //   {
+      //     plan_code: '1776402664879',
+      //     price_id: '05-1-baohua-Diamond-134X2.2-S550GD-275.0',
+      //     new_price: '1000',
+      //     reason: '测试主梁',
+      //     price_adjuster: '范建桥',
+      //     create_time: '1776931195843',
+      //   }
+      // ]
+      let r = planUtils.planCompute(this.module_data, this.adjustMsg)
+      return r  //计算方案的各项数据指标
+    },
+
+    //获取价格信息
+    priceMsg() {
+      let obj = getSummarysPrice(this.module_data, this.planPriceAdjust)
+      return obj[0]
+    },
+
+    //单个种类支架的总发电量
+    sortTrackerPvCapacity() {
+      let r = []
+      this.module_data.trackersInfo.forEach((t) => {
+        r.push(parseInt(t.pv_capacity) * parseInt(t.solar_num) * parseInt(t.trackerNum) / 1000)
+      })
+      return r
+    },
+
+    //气象站全部瓦单价
+    weatherStationTotalPerWatt() {
+      this.setWeatherStationAmount() //计算气象站材料数量
+      let a = 0
+      this.module_data.weather_station.forEach(ws => {
+        if (ws.is_needed) {
+          a += 1 * ws.amount * ws.unit_price
+        }
+      })
+      let r = a / this.newModuleData.planCapacity
+
+      if (Number.isNaN(r)) {
+        return '计算后显示'
+      }
+      return r.toFixed(6)
+    }
+
+  },
+
+  filters: {
+    filterFix(value, n) {
+      if (value != null && value > 0) {
+        return value.toFixed(n)
+      } else {
+        return 0
+      }
+    }
+  },
+
+  methods: {
+    getPlanTotalCapacity,
+    initHeadTitlePosition() {
+      const panelW = 420
+      const margin = 12
+      const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
+      this.headTitlePos = {
+        left: Math.max(margin, vw - panelW - margin),
+        top: 600,
+      }
+    },
+    onHeadTitleDragStart(e) {
+      this.headTitleDrag.active = true
+      this.headTitleDrag.startX = e.clientX
+      this.headTitleDrag.startY = e.clientY
+      this.headTitleDrag.originLeft = this.headTitlePos.left
+      this.headTitleDrag.originTop = this.headTitlePos.top
+      document.addEventListener('mousemove', this.onHeadTitleDragMove)
+      document.addEventListener('mouseup', this.onHeadTitleDragEnd)
+    },
+    onHeadTitleDragMove(e) {
+      if (!this.headTitleDrag.active) return
+      const dx = e.clientX - this.headTitleDrag.startX
+      const dy = e.clientY - this.headTitleDrag.startY
+      const panelW = 420
+      const m = 8
+      let left = this.headTitleDrag.originLeft + dx
+      let top = this.headTitleDrag.originTop + dy
+      const maxL = window.innerWidth - panelW - m
+      const maxT = window.innerHeight - 56
+      left = Math.min(Math.max(m, left), Math.max(m, maxL))
+      top = Math.min(Math.max(m, top), Math.max(m, maxT))
+      this.headTitlePos = { left, top }
+    },
+    onHeadTitleDragEnd() {
+      if (!this.headTitleDrag.active) return
+      this.headTitleDrag.active = false
+      document.removeEventListener('mousemove', this.onHeadTitleDragMove)
+      document.removeEventListener('mouseup', this.onHeadTitleDragEnd)
+    },
+    onHeadTitleViewportResize() {
+      const panelW = 420
+      const m = 8
+      const maxL = Math.max(m, window.innerWidth - panelW - m)
+      this.headTitlePos.left = Math.min(this.headTitlePos.left, maxL)
+      this.headTitlePos.top = Math.min(this.headTitlePos.top, Math.max(m, window.innerHeight - 80))
+    },
+    handelLanguage(e) {
+      //中英文界面切换
+      e.target.innerHTML = e.target.innerHTML === 'English' ? '中文' : 'English'
+      this.lgc = this.lgc === 0 ? 1 : 0
+      if (this.lgc) {
+        this.option_translation_cn()
+      } else {
+        this.option_translation_en()
+      }
+    },
+    priceTableHandleEdit(row) {
+      this.thePriceAdjust = row
+      this.newPriceObj = {
+        plan_code: this.thePlanCode,
+        price_id: this.thePriceAdjust.priceId,
+        new_price: '',
+        reason: '',
+        price_adjuster: this.name
+      },
+        this.dialogVisiblePriceAdjust = true
+    },
+    //保存本人的调价信息
+    saveAdjustPrice() {
+      if (!this.isNumeric(this.newPriceObj.new_price)) {
+        alert('输入新价格必须为数字格式')
+        return
+      }
+      if (this.newPriceObj.reason.trim().length < 3) {
+        alert('调价原因为必填项')
+        return
+      }
+      this.dialogVisiblePriceAdjust = false
+      fetch(process.env.VUE_APP_BASE_API + '/api/saveAdjustPrice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: JSON.stringify(this.newPriceObj)
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            this.getAdjustPrice(this.thePlanCode)
+            alert('保存调价信息成功!')
+          } else {
+            alert('由于网络原因，保存调价信息失败，请再次重试!')
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+    //删除本人的调价信息
+    deleteAdjustPrice() {
+      //这里加一个确认提醒
+      fetch(process.env.VUE_APP_BASE_API + '/api/saveAdjustPrice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: JSON.stringify({
+          id: '123456789',
+          price_adjuster: this.name
+        })
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            alert('保存调价信息成功!')
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+    // 判断是否为数字格式
+    isNumeric(value) {
+      return !isNaN(parseFloat(value)) && isFinite(value)
+    },
+    priceTableHandleDelete(index, row) {
+      console.log(index)
+      console.log(row)
+    },
+    option_translation_cn() {
+      this.select_option.beam_brand_options =
+        [
+          { text: '宝华', value: '宝华' },
+          { text: '烨辉', value: '烨辉' },
+          { text: '首钢', value: '首钢' }
+        ]
+    },
+    option_translation_en() {
+      this.select_option.beam_brand_options =
+        [
+          { text: 'BaoHua', value: '宝华' },
+          { text: 'YeHui', value: '烨辉' },
+          { text: 'ShouGang', value: '首钢' }
+        ]
+    },
+    showPriceDetail(e) {
+      this.showPriceAndWightDetail = !this.showPriceAndWightDetail
+      e.target.innerHTML = this.showPriceAndWightDetail ? '隐藏详细信息' : '显示详细信息'
+      this.priceMsgs = getSummarysPrice(this.module_data, this.planPriceAdjust)
+    },
+
+    //如果子组件中调价信息改变，父组件也更新一下
+    receiveFromAdjust(x) {
+      // console.log('我是TrackerIndex组件，我收到了数据：',x)
+      this.planPriceAdjust = x
+    },
+    receive(x) {
+      if (x.clicked === 'cancel') {
+        if (x.scope === 'comprehensive') {
+          this.initDefault.pile_type = this.prePileType  //回到原状态
+        }
+
+        //如果从tracker级进入桩界面，点了取消回不了原状态，后面再完善
+        if (x.scope.startsWith('tracker:')) {
+          let trackerId = x.scope.replace('tracker:', '')
+          this.module_data.trackersInfo.forEach(t => {
+            if (t.id === trackerId) {
+              t.pile_type = this.prePileType  //回到原状态
+            }
+          })
+        }
+        //如果从post级进入桩界面，点了取消回不了原状态，后面再完善
+        if (x.scope.startsWith('post')) {
+
+        }
+
+      } else {
+        console.log('x.scope', x.scope)
+        this.prePileType = x.pile_type
+        if (x.scope === 'comprehensive') {
+          console.log('开始处理全局的变量')
+          this.receivecComprehensive(x)  //处理全局的
+        }
+        if (x.scope.startsWith('tracker:')) {
+          console.log('开始处理tracker的变量')
+          let trackerId = x.scope.replace('tracker:', '')
+          this.receiveTracker(x, trackerId)  //处理tracker的
+        }
+        if (x.scope.startsWith('post:')) {
+          console.log('开始处理post的变量')
+          let trackerId = x.scope.replace('post:', '').split('||')[0]
+          let post = x.scope.replace('post:', '').split('||')[1]
+          this.receivePost(x, trackerId, post)  //处理post的
+        }
+      }
+      this.pileDialogVisible = false
+    },
+
+    receivecComprehensive(x) {
+      //改初始的桩信息
+      this.initDefault.pile_type = x.pile_type
+      this.initDefault.pile_obj = x.pile_obj
+      this.initDefault.pile_desc = x.pile_desc
+      // console.log('============================',)
+      // console.log('xxx',x)
+      // console.log('x.pile_type',x.pile_type)
+      // console.log('x.pile_obj',x.pile_obj)
+      // console.log('x.pile_desc',x.pile_desc)
+
+      // //改每个支架的桩信息
+      this.module_data.trackersInfo.forEach(t => {
+        t.pile_type = x.pile_type
+        t.pile_obj = x.pile_obj
+        t.pile_desc = x.pile_desc
+      })
+      //改每个支架中每个立柱的桩信息
+      this.module_data.trackersInfo.forEach(t => {
+        t.post_info_lst.forEach(p => {
+          p.pile_type = x.pile_type
+          p.pile_obj = x.pile_obj
+          p.pile_desc = x.pile_desc
+        })
+      })
+    },
+
+    receiveTracker(x, trackerId) {
+      console.log('receiveTracker(x,trackerId)')
+      // //改每个支架的桩信息
+      this.module_data.trackersInfo.forEach(t => {
+        if (t.id === trackerId) {
+          console.log('找到t.id===trackerId')
+          t.pile_type = x.pile_type
+          t.pile_obj = x.pile_obj
+          t.pile_desc = x.pile_desc
+        }
+      })
+      //改每个支架中每个立柱的桩信息
+      this.module_data.trackersInfo.forEach(t => {
+        if (t.id === trackerId) {
+          t.post_info_lst.forEach(p => {
+            p.pile_type = x.pile_type
+            p.pile_obj = x.pile_obj
+            p.pile_desc = x.pile_desc
+          })
+        }
+
+      })
+    },
+    receivePost(x, trackerId, post) {
+      console.log('==============', trackerId, post)
+      //改每个支架中每个立柱的桩信息
+      this.module_data.trackersInfo.forEach(t => {
+        if (t.id === trackerId) {
+          t.post_info_lst.forEach(p => {
+            if (p.position * 1 === post * 1) {
+              p.pile_type = x.pile_type
+              p.pile_obj = x.pile_obj
+              p.pile_desc = x.pile_desc
+            }
+          })
+        }
+      })
+    },
+
+    //编辑桩参数
+    editPile(e, scope) {
+      //scope：作用范围，全部支架，单个支架，还是仅支架的一根立柱
+      //如果作用域为全局时
+      this.thePileScope = scope
+      this.thePileType = e.target.value * 1
+      this.pileDialogVisible = true
+    },
+
+    change_pv_capacity() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.pv_capacity = this.initDefault.pv_capacity
+      })
+    },
+    change_product_system() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.product_system = this.initDefault.product_system
+      })
+    },
+    change_power_supply() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.power_supply = this.initDefault.power_supply
+      })
+    },
+    change_corrosion_proofing_grade() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.corrosion_proofing_grade = this.initDefault.corrosion_proofing_grade
+      })
+    },
+    change_post_galvanizin_thickness() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.post_galvanizin_thickness = this.initDefault.post_galvanizin_thickness
+      })
+    },
+    change_beam_galvanizin_thickness() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.beam_galvanizin_thickness = this.initDefault.beam_galvanizin_thickness
+      })
+    },
+    change_purlin_galvanizin_thickness() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.purlin_galvanizin_thickness = this.initDefault.purlin_galvanizin_thickness
+      })
+    },
+    change_beam_brand() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.beam_brand = this.initDefault.beam_brand
+      })
+    },
+    change_purlin_brand() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.purlin_brand = this.initDefault.purlin_brand
+      })
+    },
+
+    //当减速机尺寸改变时，柱子回缩距离也会改变
+    change_slew_drive_inch() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.slew_drive_inch = this.initDefault.slew_drive_inch
+      })
+      this.module_data.trackersInfo.forEach((t) => {
+        t.post_info_lst.forEach(p => {
+          if (p.category === '驱动') {
+            p.height = t.post_height - apiTracker.postLengthReduce(true, t.beam_section_type, t.beam_section_dim, t.slew_drive_inch)
+          }
+        })
+      })
+    },
+
+    //当减速机尺寸改变时，柱子回缩距离也会改变
+    t_slew_drive_inch_change(id) {
+      this.module_data.trackersInfo.forEach((t) => {
+        if (t.id === id) {
+          t.post_info_lst.forEach(p => {
+            if (p.category === '驱动') {
+              p.height = t.post_height - apiTracker.postLengthReduce(true, t.beam_section_type, t.beam_section_dim, t.slew_drive_inch)
+            }
+          })
+        }
+      })
+    },
+
+    change_slew_cover_if_need() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.slew_cover_if_need = this.initDefault.slew_cover_if_need
+      })
+    },
+    change_dumper_num() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.dumper_num = this.initDefault.dumper_num
+      })
+    },
+    change_dumper_type() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.dumper_type = this.initDefault.dumper_type
+      })
+    },
+    change_spring_damper_type() {
+      this.module_data.trackersInfo.forEach((t) => {
+        t.spring_damper_type = this.initDefault.spring_damper_type
+      })
+    },
+    //选择好文件好,确认提取文件中数据
+    importDataFromTxt() {
+      this.module_data.trackersInfo = []
+      // console.log(this.fileList.length)
+      for (let i = 0; i < this.fileList.length; i++) {
+        let file = this.fileList[i]
+        this.handleFile(file)
+      }
+      console.log('&&&', this.module_data.trackersInfo)
+    },
+    //气象站点击接受建议时，数量自动计算
+    handleWsClick(e) {
+      let temp = this.module_data.weather_station
+    },
+
+    //将支架按串排序
+    sortTrackers() {
+      this.module_data.trackersInfoSort()
+    },
+    handleFile(file) {
+      //处理单个文件
+      const fileName = file.name
+      let ui_model_info = ''
+      let Exterior_info = ''
+      let Edge_info = ''
+      let Interior_info = ''
+      apiTracker.getTextFileContent(file).then(content => {
+        content = content.replace('cal_option.ui_option', 'cal_option_ui_option')
+        const cntObj = JSON.parse(content)  //转为对象
+        // console.log("ui_model_info",cntObj.ui_model_info)
+        // console.log("paras_table",cntObj.paras_table)
+        // console.log("Exterior",cntObj.model_dict.Exterior)
+        // console.log("Edge",cntObj.model_dict.Edge)
+        // console.log("Interior",cntObj.model_dict.Interior)
+        // console.log("cal_option.ui_option",cntObj.cal_option_ui_option)
+
+        if (content.includes('ui_model_info') && content.includes('model_dict')) {
+          let initInfo = this.initDefault  //初始默认数据
+          let ui_model_info = cntObj.ui_model_info
+          let model_dict = cntObj.model_dict
+          // console.log('model_dict',model_dict)
+
+          if ('Exterior' in model_dict) {
+            this.module_data.trackersInfo.push(
+              apiTracker.trackStr2Obj(fileName, 'Exterior', ui_model_info, model_dict.Exterior, initInfo)  //生成一个完整支架的计算输入文件
+            )
+          }
+          if ('Edge' in model_dict) {
+            this.module_data.trackersInfo.push(
+              apiTracker.trackStr2Obj(fileName, 'Edge', ui_model_info, model_dict.Edge, initInfo)  //生成一个完整支架的计算输入文件
+            )
+          }
+          if ('Interior' in model_dict) {
+            this.module_data.trackersInfo.push(
+              apiTracker.trackStr2Obj(fileName, 'Interior', ui_model_info, model_dict.Interior, initInfo)  //生成一个完整支架的计算输入文件
+            )
+          }
+
+          //console.log('@', this.module_data.trackersInfo.trackersInfo)
+        } else {
+          alert('文件格式错误警告：' + '\n' + '你输入的文件名为：' + file.name + ' 的内容无效!\n请重新选择！')
+        }
+      }).catch(error => {
+        console.error('读取文件出错:', error)
+      })
+    },
+    handleSuccess(file, fileList) {
+      this.fileList = fileList
+    },
+    handleRemove(file, fileList) {
+      this.fileList = fileList
+    },
+    handlePreview(file) {
+      console.log('this.trackerInfos', this.trackerInfos)
+    },
+
+    //当模型数据改变时
+    afterMoudleDataChange() {
+      // this.module_data.caculateThisPlan()
+    },
+
+    addPurlin(id) {
+      for (let i = 0; i < this.module_data.trackersInfo.length; i++) {
+        if (this.module_data.trackersInfo[i].id === id) {
+          let nid = Math.floor(Math.random() * (999 - 100 + 1)) + 100  //随机三位数
+          let obj = {
+            id: nid,
+            material: 'S450GD',
+            section: '-1.5x30x30x60',
+            length: 1450,
+            amount: 0,
+            installPoints: '4*M6',
+            blockNeed: false
+          }
+          this.module_data.trackersInfo[i].purlin_info_lst.push(obj)
+          break
+        }
+      }
+    },
+
+    //tid是支架的id，pid是檩条列表中檩条的id
+    deletePurlin(tid, pid) {
+      for (let i = 0; i < this.module_data.trackersInfo.length; i++) {
+        if (this.module_data.trackersInfo[i].id === tid) {
+          // 使用 filter 方法创建一个新数组
+          this.module_data.trackersInfo[i].purlin_info_lst = this.module_data.trackersInfo[i].purlin_info_lst.filter(element => element.id !== pid)
+          break
+        }
+      }
+    },
+    printTrackObj(t) {
+      console.log('t', t)
+    },
+
+    submitUpload() {
+      this.$refs.upload.submit()
+    },
+
+    //提交到后台计算
+    submitCalculate() {
+      this.saveDisbled = true  //将保存按钮设为不可用
+      this.bomFinished = 0
+
+      for (let i = 0; i < this.module_data.trackersInfo.length; i++) {
+        this.module_data.trackersInfo[i].ifCalculated = false
+        this.module_data.trackersInfo[i].process_site = this.module_data.process_site
+        this.module_data.trackersInfo[i].resultList = []
+        let subData = this.module_data.trackersInfo[i]
+        fetch(process.env.VUE_APP_BASE_API + '/api/submitData', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+          },
+          body: JSON.stringify({ data: subData })
+        })
+          .then(response => {
+            // 确保服务器响应为成功状态码
+            if (response.ok) {
+              // 获取响应体中的JSON数据
+              delete this.module_data.trackersInfo[i].process_site  //删除，以免后面保存时出现冗余
+              return response.json()
+            } else {
+              // 如果响应状态码不是2xx，抛出错误
+              throw new Error('Something went wrong on server side.')
+            }
+          })
+          .then(r => {
+            //收集计算结果
+            let tr =
+              {
+                bom1Length: r.data.bomShow1.length,
+                bom1: r.data.bomShow1,
+                bomErr: r.data.bomShowErr
+              }
+            //将计算结果赋值
+            for (let j = 0; j < this.module_data.trackersInfo.length; j++) {
+              if (this.module_data.trackersInfo[j].id === subData.id) {
+                this.module_data.trackersInfo[j].ifCalculated = true    //标注为已计算
+                this.module_data.trackersInfo[j].resultList = tr
+                // this.module_data.trackersInfo[j].caculateThisTracker(this.module_data.planTrackersCount, this.module_data.spareParts)  //计算综合参数
+              }
+            }
+            this.bomFinished++
+            if (this.bomFinished === this.module_data.trackersInfo.length) {
+              this.saveDisbled = false  //将保存按钮设为可用
+              alert('计算完成!')
+            }
+          })
+          .catch(error => {
+            // 捕捉fetch过程中或处理响应时的错误
+            console.error('Error:', error)
+          })
+      }
+      alert('提交计算成功，计算时间因网络及项目情况大约需要8-20秒时间，请点击“确认”后等待，并且保持当前页面！')
+    },
+    //计算气象站材料数量
+    setWeatherStationAmount() {
+      let a = this.sortTrackerPvCapacity.reduce((accumulator, currentValue) => {
+        return accumulator + currentValue
+      }, 0)
+      this.module_data.weather_station.forEach((item) => {
+        if (item.m_code === 'communication-station' && item.is_needed && item.is_accepted) {
+          item.amount = Math.ceil(a / (6000))
+        } else if (item.m_code === 'fence-weather-station' && item.is_needed && item.is_accepted) {
+          item.amount = Math.ceil(a / (30000))
+        } else if (item.m_code === 'SCADA-basic-equipment' && item.is_needed && item.is_accepted) {
+          item.amount = 1
+        } else if (item.m_code === 'SCADA-485-communication-module' && item.is_needed && item.is_accepted) {
+          item.amount = Math.ceil(a / (6000) + 2)
+        } else if (item.m_code === 'SCADA-ring-network-switch' && item.is_needed && item.is_accepted) {
+          item.amount = Math.ceil(a / (6000) + 2)
+        }
+      })
+    },
+    showAdjustPriceTable() {
+      this.priceIdObj = getPriceIds(this.module_data)
+      if (this.adjustPriceIfShow) {
+        this.adjustPriceIfShow = false
+        this.showAdjustButtonValue = '显示调价窗口'
+      } else {
+        this.adjustPriceIfShow = true
+        this.showAdjustButtonValue = '隐藏调价窗口'
+      }
+    },
+
+
+    //获取本人项目信息和编号
+    fetchMyProjectData() {
+      fetch(process.env.VUE_APP_BASE_API + '/api/findMyProject', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: this.name
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.my_projects = r.data
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+    handleClose(done) {
+      done()
+    },
+
+    async updateWeatherStationPrice() {
+      await this.fetchWeatherStationData()
+      this.module_data.weather_station.forEach((item) => {
+        item.unit_price = item.newest_price
+      })
+    },
+
+    //获取气象站价格
+    fetchWeatherStationData() {
+      fetch(process.env.VUE_APP_BASE_API + '/api/findWeatherStation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: this.name
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          let a = {}
+          r.data.forEach(r => {
+            a[r.product_code] = r.unit_price_grade_C3
+          })
+          this.module_data.weather_station.forEach((item) => {
+            item.newest_price = a[item.m_code]
+          })
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+
+    //保存方案
+    saveOrUpdatePlan() {
+      console.log('save or update plan')
+      console.log(this.module_data)
+      // //先计算完成才能保存
+      // for (let i = 0; i < this.module_data.trackersInfo.length; i++) {
+      //   if (this.module_data.trackersInfo[i].resultList.length === 0) {
+      //     alert('支架价格计算没有全部完成，请完成全部支架计算后再提交保存！')
+      //     return
+      //   }
+      // }
+      this.module_data.plan_code = this.thePlanCode
+      this.updatePlan(this.module_data)
+    },
+
+    updatePlan(subData) {
+      fetch(process.env.VUE_APP_BASE_API + '/api/submitUpdatePlan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: JSON.stringify(subData)
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            alert('更新项目方案成功!')
+            this.dialogVisible = false
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+
+    handleDrawerClose(done) {
+      this.$confirm('确认关闭？')
+        .then(_ => {
+          done()
+        })
+        .catch(_ => {
+        })
+    },
+    //传入tracker的ID
+
+    getDrawerTracker(tid) {
+      // this.getPlanAllAdjustPrice()  //获取本方案全部的报价
+      this.drawer = true
+      this.drawerTracker = this.newModuleData.trackersInfo.filter(t => t.id === tid)[0]
+      console.log('================this.drawerTracker')
+      console.log(this.drawerTracker)
+      this.drawerTitle = this.drawerTracker.trackBrifeName
+    },
+
+    //获取本方案的调价信息
+    getAdjustPrice(planCode) {
+      fetch(process.env.VUE_APP_BASE_API + '/api/getPlanAdjustPrice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: JSON.stringify({
+          plan_code: planCode
+        })
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            alert('获取调价信息出错，请刷新页面试一下')
+            // throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          console.log('r.data:',r.data)
+          this.adjustMsg = r.data  //将调价信息保存
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+    // //获取项目所有调价信息
+    // getPlanAllAdjustPrice() {
+    //   let subData = {
+    //     plan_code: this.module_data.plan_code
+    //   }
+    //   fetch(process.env.VUE_APP_BASE_API + '/api/findPlanAdjustPrice', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+    //     },
+    //     body: JSON.stringify(subData)
+    //   })
+    //     .then(response => {
+    //       // 确保服务器响应为成功状态码
+    //       if (response.ok) {
+    //         // 获取响应体中的JSON数据
+    //         return response.json()
+    //       } else {
+    //         // 如果响应状态码不是2xx，抛出错误
+    //         throw new Error('Something went wrong on server side.')
+    //       }
+    //     })
+    //     .then(r => {
+    //       let systemAdjust = { who_adjust: '系统报价', adjust_price_details: {} }  //默认有系统调价
+    //       this.planPriceAdjust = JSON.parse(r.data)
+    //       //如果没有调过价
+    //       if (JSON.parse(r.data) === undefined || JSON.parse(r.data) === null) {
+    //         this.planPriceAdjust = [systemAdjust]
+    //       } else {
+    //         this.planPriceAdjust = JSON.parse(r.data)
+    //         this.planPriceAdjust.unshift(systemAdjust)
+    //       }
+    //     })
+    //     .catch(error => {
+    //       // 捕捉fetch过程中或处理响应时的错误
+    //       console.error('Error:', error)
+    //     })
+    // },
+
+    //获取方案
+    getThisPlanDetail(planCode) {
+      fetch(process.env.VUE_APP_BASE_API + '/api/findPlanDetail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: planCode
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          if (r.data.trim().length > 10) {
+            this.module_data = this.resultCoverToPlan(r.data)
+            console.log(this.module_data)
+          }
+
+          // console.log("module_data",this.module_data)
+          // console.log("newModuleData",this.newModuleData)
+          // console.log(this.module_data === this.newModuleData)
+
+          // this.getPlanAllAdjustPrice()  //获取所有调价信息
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+
+    //获取方案
+    fetchProjectPlanData(planCode) {
+      fetch(process.env.VUE_APP_BASE_API + '/api/getProjectAndPlanByPlancodes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: planCode
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.theProjectAndPlanObj = r.data[0]
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
+    //将结果字符串转为plan对象
+    resultCoverToPlan(data) {
+      let planObj = JSON.parse(data)
+      let plan = new Plan()
+      // 遍历 obj 对象的键值对
+      for (const [key, value] of Object.entries(planObj)) {
+        // 如果 plan 中有对应的属性，则更新它的值
+        if (plan.hasOwnProperty(key)) {
+          plan[key] = value
+        }
+      }
+      for (let i = 0; i < plan.trackersInfo.length; i++) {
+        let t = new Tracker()
+        for (const [key, value] of Object.entries(plan.trackersInfo[i])) {
+          // 如果 plan 中有对应的属性，则更新它的值
+          if (t.hasOwnProperty(key)) {
+            t[key] = value
+          }
+        }
+        plan.trackersInfo[i] = t
+      }
+      return plan
+    },
+    indexMethod(index) {
+      return index + 1
+    },
+    formatNumber2(row, column, cellValue) {
+      if (typeof (cellValue) === 'number') {
+        if (cellValue === 0) {
+          return ''
+        }
+        if (Number.isInteger(cellValue)) {
+          return cellValue // 如果是整数，直接返回该数字
+        } else {
+          return cellValue.toFixed(2)
+        }
+      } else {
+        return cellValue
+      }
+    },
+    formatNumber3(row, column, cellValue) {
+      if (typeof (cellValue) === 'number') {
+        if (cellValue === 0) {
+          return ''
+        }
+        if (Number.isInteger(cellValue)) {
+          return cellValue // 如果是整数，直接返回该数字
+        } else {
+          return cellValue.toFixed(3)
+        }
+      } else {
+        return cellValue
+      }
+    },
+    formatNumber6(row, column, cellValue) {
+      if (typeof (cellValue) === 'number') {
+        if (cellValue === 0) {
+          return ''
+        }
+        if (Number.isInteger(cellValue)) {
+          return cellValue // 如果是整数，直接返回该数字
+        } else {
+          return cellValue.toFixed(6)
+        }
+      } else {
+        return cellValue
+      }
+    }
+  },
+
+  props: {
+    planCode: {
+      type: String
+    },
+    msg: {
+      type: Object
+    },
+    saveable: {
+      type: Boolean,
+      default: false
+    }
+  },
+  // 生命周期函数：内存准备完毕，将自己权限内项目的名称拿到
+  created() {
+    //如果传入了项目号，按已有项目处理
+    if (this.planCode !== undefined) {
+      this.thePlanCode = this.planCode
+      this.getThisPlanDetail(this.planCode)
+      this.fetchProjectPlanData(this.planCode)
+    } else {
+      if (this.msg.planCode) {
+        //如果有项目号，将项目号替为当前,并去数据库找有没有
+        this.thePlanCode = this.msg.planCode
+        this.getThisPlanDetail(this.msg.planCode)
+        this.fetchProjectPlanData(this.msg.planCode)
+      } else {
+        this.thePlanCode = Date.now()  //否则指定一下项目号
+      }
+    }
+    this.getAdjustPrice(this.thePlanCode)  //获取调价信息
+    if (typeof window !== 'undefined') {
+      this.initHeadTitlePosition()
+    }
+  },
+
+  mounted() {
+    this.initHeadTitlePosition()
+    window.addEventListener('resize', this.onHeadTitleViewportResize)
+  },
+
+  beforeDestroy() {
+    document.removeEventListener('mousemove', this.onHeadTitleDragMove)
+    document.removeEventListener('mouseup', this.onHeadTitleDragEnd)
+    window.removeEventListener('resize', this.onHeadTitleViewportResize)
+  },
+}
+
+
+</script>
+
+<style lang="scss" scoped>
+.bominput-container {
+  position: relative;
+  text-align: left;
+  max-width: 100%; /* 限制容器宽度不超过屏幕宽度 */
+  overflow-x: auto; /* 当内容宽度超过容器宽度时显示水平滚动条 */
+  overflow-y: scroll;
+}
+
+.scrollable-div {
+  height: 1260px;
+  padding-left: 20px;
+  padding-bottom: 600px;
+  overflow-y: scroll;
+}
+
+table {
+  margin-left: 10px;
+  border-collapse: collapse; /* 确保边框不会重叠 */
+  border: 1px solid black; /* 设置表格边框颜色和宽度 */
+}
+
+caption {
+  text-align: left;
+  height: 30px;
+}
+
+th, td {
+  border: 1px solid black; /* 设置表格内部单元格边框颜色和宽度 */
+  text-align: center;
+}
+
+.el-drawer.rtl {
+  overflow: scroll;
+}
+
+.chart {
+  height: 300px;
+}
+
+.weather_station thead tr td {
+  text-align: center;
+}
+
+.weather_station tbody tr td {
+  text-align: left;
+}
+
+/* 可拖拽 · 天蓝色 / 主色块透明度 50% */
+.head-title {
+  position: fixed;
+  width: 420px;
+  right: auto;
+  z-index: 100;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(
+    155deg,
+    rgba(125, 211, 252, 0.5) 0%,
+    rgba(56, 189, 248, 0.5) 45%,
+    rgba(14, 165, 233, 0.5) 100%
+  );
+  border: 1px solid rgba(2, 132, 199, 0.5);
+  box-shadow:
+    0 12px 40px rgba(14, 165, 233, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+    0 1px 0 rgba(255, 255, 255, 0.35) inset;
+  backdrop-filter: blur(10px);
+  color: #0c4a6e;
+  font-size: 13px;
+  line-height: 1.45;
+  user-select: none;
+}
+
+.head-title--dragging {
+  cursor: grabbing;
+  box-shadow:
+    0 16px 48px rgba(2, 132, 199, 0.35),
+    0 0 20px rgba(56, 189, 248, 0.4);
+}
+
+.head-title__drag-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: grab;
+  background: linear-gradient(
+    90deg,
+    rgba(186, 230, 253, 0.5) 0%,
+    rgba(125, 211, 252, 0.5) 50%,
+    rgba(56, 189, 248, 0.5) 100%
+  );
+  border-bottom: 1px solid rgba(2, 132, 199, 0.5);
+}
+
+.head-title--dragging .head-title__drag-bar {
+  cursor: grabbing;
+}
+
+.head-title__eco-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #e0f2fe, #38bdf8 55%, #0284c7);
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.5);
+}
+
+.head-title__badge {
+  flex: 1;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #075985;
+}
+
+.head-title__hint {
+  font-size: 11px;
+  color: rgba(7, 89, 133, 0.7);
+}
+
+.head-title__body {
+  padding: 12px 14px 14px;
+  user-select: text;
+}
+
+.head-title__body p {
+  margin: 6px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(2, 132, 199, 0.35);
+  color: #0c4a6e;
+}
+
+.head-title__body p:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.el-radio {
+  margin: 0 16px 0;
+}
+
+
+</style>
+
+
+
+
+
+

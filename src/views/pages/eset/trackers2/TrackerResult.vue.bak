@@ -1,0 +1,743 @@
+<template>
+  <div class="scrollable-div" style="text-align: center;height: 1600px;">
+
+    <!-- 为 ECharts 准备一个定义了宽高的 DOM -->
+    <div class="div-box">
+      <div id="class1" style="display: inline-block; width: 30%;height:400px;margin-right: 50px"></div>
+      <div id="class2" style="display: inline-block; width: 30%;height:400px;margin-right: 50px"></div>
+    </div>
+    <el-divider></el-divider>
+
+    <div v-if="tableDataErr.length>0" class="table-caption">
+      <span style="font-size: 30px;color: red">{{ trackerObj.trackBrifeName }}-计算异常表/some thing wrong</span>
+      <el-table
+        :data="tableDataErr"
+        border
+        stripe
+        style="width: 100%"
+      >
+        <el-table-column prop="num" label="序号" width="60"></el-table-column>
+        <el-table-column prop="name" label="处理建议" width="200"></el-table-column>
+        <el-table-column prop="specification" label="错误定位" width="300"></el-table-column>
+        <el-table-column prop="remark" label="问题描述"></el-table-column>
+      </el-table>
+      <div style="height: 40px;background-color: wheat">The End</div>
+    <el-divider></el-divider>
+    </div>
+
+<!--主材-->
+    <div class="table-caption">
+      <table>
+        <caption>{{ trackerObj.trackBrifeName }}-Main Materail</caption>
+        <thead>
+        <tr>
+          <td style="width: 160px" rowspan="2">材料id</td>
+          <td style="width: 100px" rowspan="2">名称</td>
+          <td style="width: 100px" rowspan="2">材料编号</td>
+          <td style="width: 60px" rowspan="2">件号</td>
+          <td style="width: 200px" rowspan="2">规格</td>
+          <td style="width: 150px" rowspan="2">材质</td>
+          <td style="width: 60px" rowspan="2">长度</td>
+          <td style="width: 60px" rowspan="2">数量</td>
+          <td style="width: 60px" colspan="3">重量</td>
+          <td style="width: 60px" rowspan="2">单位</td>
+          <td style="width: 60px" rowspan="2">计价<br>方式</td>
+          <td style="width: 60px" rowspan="2">生产地</td>
+          <td style="width: 60px" colspan="3">不含备品备件价格</td>
+          <td style="width: 60px" colspan="3">含备品备件价格</td>
+          <td style="width: 60px" rowspan="2">备注</td>
+          <!--          <td style="width: 60px" colspan="3">我的调价</td>-->
+        </tr>
+        <tr>
+          <td style="width: 60px">米重</td>
+          <td style="width: 60px">单重</td>
+          <td style="width: 60px">总重</td>
+          <td style="width: 60px">成本</td>
+          <td style="width: 60px">单价</td>
+          <td style="width: 60px">总价</td>
+          <td style="width: 60px">成本</td>
+          <td style="width: 60px">单价</td>
+          <td style="width: 60px">总价</td>
+          <!--          <td style="width: 60px">成本价</td>-->
+          <!--          <td style="width: 60px">原单价</td>-->
+          <!--          <td style="width: 60px">总价</td>-->
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="t in tableData1" :key="t.item">
+          <td>{{ t.priceId }}</td>
+          <td>{{ t.name }}</td>
+          <td>{{ t.productCode}}</td>
+          <td><a href="#" @click="showImage">{{ t.partNo }}</a></td>
+          <td>{{ t.specification }}</td>
+          <td>{{ t.material }}</td>
+          <td>{{ t.length|filterFix }}</td>
+          <td>{{ t.amount }}</td>
+          <td>{{ t.weightPerMater|filterFix(3) }}</td>
+          <td>{{ t.unitWeight|filterFix(3) }}</td>
+          <td>{{ t.totalWeight|filterFix(3) }}</td>
+          <td>{{ t.unit }}</td>
+          <td>{{ t.priceMethod }}</td>
+          <td>{{ t.remark }}</td>
+          <td style="background-color: #ff440044">{{ t.costPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440044">{{ t._unitPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440044">{{ t._totalPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440088">{{ t._designerCostPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440088">{{ t._designerUnitPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440088">{{ t._designerTotalPrice|filterFix(2) }}</td>
+          <!--          <td style="background-color: #ff440044">{{ t._myCostPrice|filterFix(2) }}</td>-->
+          <!--          <td style="background-color: #ff440044">{{ t._myUnitPrice|filterFix(2) }}</td>-->
+          <!--          <td style="background-color: #ff440044">{{ t._myTotalPrice|filterFix(2) }}</td>-->
+        </tr>
+        <tr style="height: 40px;background-color: #ae80da">
+          <td colspan="9">单瓦价：{{(tableData_totalPrice(tableData1)/trackerCapacity)|filterFix(3)}}元；单瓦重：{{(tableData_totalWeight(tableData1)/trackerCapacity)|filterFix(3)}}kg</td>
+          <td>{{tableData_totalWeight(tableData1)|filterFix(2)}}</td>
+          <td colspan="4"></td>
+          <td>{{tableData_totalPrice(tableData1)|filterFix(2)}}</td>
+          <td colspan="2"></td>
+          <td>{{tableData_designerTotalPrice(tableData1)|filterFix(2)}}</td>
+        </tr>
+        </tbody>
+      </table>
+      <el-divider></el-divider>
+    </div>
+<!--紧固件-->
+    <div class="table-caption">
+      <table>
+        <caption>{{ trackerObj.trackBrifeName }}-Fastener</caption>
+        <thead>
+        <tr>
+          <td style="width: 160px" rowspan="2">材料id</td>
+          <td style="width: 100px" rowspan="2">名称</td>
+          <td style="width: 100px" rowspan="2">材料编号</td>
+          <td style="width: 60px" rowspan="2">件号</td>
+          <td style="width: 200px" rowspan="2">规格</td>
+          <td style="width: 150px" rowspan="2">材质</td>
+          <td style="width: 60px" rowspan="2">长度</td>
+          <td style="width: 60px" rowspan="2">数量</td>
+          <td style="width: 60px" colspan="3">重量</td>
+          <td style="width: 60px" rowspan="2">单位</td>
+          <td style="width: 60px" rowspan="2">计价<br>方式</td>
+          <td style="width: 60px" colspan="3">系统报价</td>
+          <td style="width: 60px" colspan="3">设计师调价</td>
+          <!--          <td style="width: 60px" colspan="3">我的调价</td>-->
+        </tr>
+        <tr>
+          <td style="width: 60px">米重</td>
+          <td style="width: 60px">单重</td>
+          <td style="width: 60px">总重</td>
+          <td style="width: 60px">成本价</td>
+          <td style="width: 60px">原单价</td>
+          <td style="width: 60px">总价</td>
+          <td style="width: 60px">成本价</td>
+          <td style="width: 60px">原单价</td>
+          <td style="width: 60px">总价</td>
+          <!--          <td style="width: 60px">成本价</td>-->
+          <!--          <td style="width: 60px">原单价</td>-->
+          <!--          <td style="width: 60px">总价</td>-->
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="t in tableData2" :key="t.item">
+          <td>{{ t.priceId }}</td>
+          <td>{{ t.name }}</td>
+          <td>{{ t.productCode}}</td>
+          <td><a href="#" @click="showImage">{{ t.partNo }}</a></td>
+          <td>{{ t.specification }}</td>
+          <td>{{ t.material }}</td>
+          <td>{{ t.length|filterFix }}</td>
+          <td>{{ t.amount }}</td>
+          <td>{{ t.weightPerMater|filterFix(3) }}</td>
+          <td>{{ t.unitWeight|filterFix(3) }}</td>
+          <td>{{ t.totalWeight|filterFix(3) }}</td>
+          <td>{{ t.unit }}</td>
+          <td>{{ t.priceMethod }}</td>
+          <td style="background-color: #ff440044">{{ t.costPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440044">{{ t._unitPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440044">{{ t._totalPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440088">{{ t._designerCostPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440088">{{ t._designerUnitPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440088">{{ t._designerTotalPrice|filterFix(2) }}</td>
+          <!--          <td style="background-color: #ff440044">{{ t._myCostPrice|filterFix(2) }}</td>-->
+          <!--          <td style="background-color: #ff440044">{{ t._myUnitPrice|filterFix(2) }}</td>-->
+          <!--          <td style="background-color: #ff440044">{{ t._myTotalPrice|filterFix(2) }}</td>-->
+        </tr>
+        <tr style="height: 40px;background-color: #ae80da">
+          <td colspan="9">单瓦价：{{(tableData_totalPrice(tableData2)/trackerCapacity)|filterFix(3)}}元；单瓦重：{{(tableData_totalWeight(tableData2)/trackerCapacity)|filterFix(3)}}kg</td>
+          <td>{{tableData_totalWeight(tableData2)|filterFix(2)}}</td>
+          <td colspan="4"></td>
+          <td>{{tableData_totalPrice(tableData2)|filterFix(2)}}</td>
+          <td colspan="2"></td>
+          <td>{{tableData_designerTotalPrice(tableData2)|filterFix(2)}}</td>
+        </tr>
+        </tbody>
+      </table>
+      <el-divider></el-divider>
+    </div>
+<!--机械和电器-->
+    <div class="table-caption">
+      <table>
+        <caption>{{ trackerObj.trackBrifeName }}-Mechanical and Electrical</caption>
+        <thead>
+        <tr>
+          <td style="width: 160px" rowspan="2">材料id</td>
+          <td style="width: 100px" rowspan="2">名称</td>
+          <td style="width: 100px" rowspan="2">材料编号</td>
+          <td style="width: 60px" rowspan="2">件号</td>
+          <td style="width: 200px" rowspan="2">规格</td>
+          <td style="width: 150px" rowspan="2">材质</td>
+          <td style="width: 60px" rowspan="2">长度</td>
+          <td style="width: 60px" rowspan="2">数量</td>
+          <td style="width: 60px" colspan="3">重量</td>
+          <td style="width: 60px" rowspan="2">单位</td>
+          <td style="width: 60px" rowspan="2">计价<br>方式</td>
+          <td style="width: 60px" colspan="3">系统报价</td>
+          <td style="width: 60px" colspan="3">设计师调价</td>
+          <!--          <td style="width: 60px" colspan="3">我的调价</td>-->
+        </tr>
+        <tr>
+
+          <td style="width: 60px">米重</td>
+          <td style="width: 60px">单重</td>
+          <td style="width: 60px">总重</td>
+          <td style="width: 60px">成本价</td>
+          <td style="width: 60px">原单价</td>
+          <td style="width: 60px">总价</td>
+          <td style="width: 60px">成本价</td>
+          <td style="width: 60px">原单价</td>
+          <td style="width: 60px">总价</td>
+          <!--          <td style="width: 60px">成本价</td>-->
+          <!--          <td style="width: 60px">原单价</td>-->
+          <!--          <td style="width: 60px">总价</td>-->
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="t in tableData3" :key="t.item">
+          <td>{{ t.priceId }}</td>
+          <td>{{ t.name }}</td>
+          <td>{{ t.productCode}}</td>
+          <td><a href="#" @click="showImage">{{ t.partNo }}</a></td>
+          <td>{{ t.specification }}</td>
+          <td>{{ t.material }}</td>
+          <td>{{ t.length|filterFix(0) }}</td>
+          <td>{{ t.amount }}</td>
+          <td>{{ t.weightPerMater|filterFix(3) }}</td>
+          <td>{{ t.unitWeight|filterFix(3) }}</td>
+          <td>{{ t.totalWeight|filterFix(3) }}</td>
+          <td>{{ t.unit }}</td>
+          <td>{{ t.priceMethod }}</td>
+          <td style="background-color: #ff440044">{{ t.costPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440044">{{ t._unitPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440044">{{ t._totalPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440088">{{ t._designerCostPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440088">{{ t._designerUnitPrice|filterFix(2) }}</td>
+          <td style="background-color: #ff440088">{{ t._designerTotalPrice|filterFix(2) }}</td>
+          <!--          <td style="background-color: #ff440044">{{ t._myCostPrice|filterFix(2) }}</td>-->
+          <!--          <td style="background-color: #ff440044">{{ t._myUnitPrice|filterFix(2) }}</td>-->
+          <!--          <td style="background-color: #ff440044">{{ t._myTotalPrice|filterFix(2) }}</td>-->
+        </tr>
+        <tr style="height: 40px;background-color: #ae80da">
+          <td colspan="9">单瓦价：{{(tableData_totalPrice(tableData3)/trackerCapacity)|filterFix(3)}}元；单瓦重：{{(tableData_totalWeight(tableData3)/trackerCapacity)|filterFix(3)}}kg</td>
+          <td>{{tableData_totalWeight(tableData3)|filterFix(2)}}</td>
+          <td colspan="4"></td>
+          <td>{{tableData_totalPrice(tableData3)|filterFix(2)}}</td>
+          <td colspan="2"></td>
+          <td>{{tableData_designerTotalPrice(tableData3)|filterFix(2)}}</td>
+        </tr>
+        </tbody>
+      </table>
+      <el-divider></el-divider>
+    </div>
+
+    <div style="height: 600px"></div>
+  </div>
+
+
+</template>
+
+<script>
+import echarts from 'echarts/lib/echarts'
+import { getToken } from '@/utils/auth'
+import { getBomUnitPrice, getAdjustCostPrice, getTrackerCategroyA,
+  getTrackerTotal,getTrackerTotalByDesigner,getTrackerTotalByMy } from '@/views/pages/eset/trackers2/utils/classPlan.js'
+
+export default {
+  name: 'TrackerResult',
+  data() {
+    return {
+      // 设置图片的URL
+      imageSrc: '', // 图片的路径
+      imageVisible: false, // 控制图片是否显示
+      partImgTop: 0,  //图片出现位置
+      partImgLeft: 0,
+      thePartName: '',
+      dwgSrc: '', // 图纸图片的路径
+      dwgVisible: false, // 控制图片是否显示
+      imgObj: {},  //用于保存图片数据
+      thePartCode: ''
+    }
+  },
+  computed:{
+    //单个tracker的瓦数
+    trackerCapacity(){
+      return this.trackerObj.solar_num * this.trackerObj.pv_capacity
+    },
+    //获取设计师的调价信息
+    designerAdjustPriceDetail(){
+      let adjustDetails = {}
+      for (const item of this.planPriceAdjust) {
+        if(item.who_adjust === this.designer){
+          adjustDetails = item.adjust_price_details
+          break
+        }
+      }
+      return adjustDetails
+    },
+
+    //获取我的调价信息
+    myAdjustPriceDetail(){
+      let adjustDetails = {}
+      for (const item of this.planPriceAdjust) {
+        if(item.who_adjust === this.name){
+          adjustDetails = item.adjust_price_details
+          break
+        }
+      }
+      return adjustDetails
+    },
+
+    //原始的bom表内容不完善，比如没有单价表等
+    newBoms(){
+      let nbom = this.trackerObj.resultList.bom1;
+      for (const b of nbom) {
+        b._unitPrice = getBomUnitPrice(b.priceMethod,b.costPrice,b.unitWeight);  //获取材料单价
+        b._totalPrice = b._unitPrice * b.amount;  //获取材料单价
+
+        //设计师调后的价格fdsa
+        b._designerCostPrice = b.costPrice;
+        b._designerUnitPrice = b._unitPrice;
+        b._designerTotalPrice = b._totalPrice;
+        if(this.planPriceAdjust.length > 0){
+          let myAdjustDetails = {}
+          for (const item of this.planPriceAdjust) {
+            if(item.who_adjust === this.designer){
+              myAdjustDetails = item.adjust_price_details
+              break
+            }
+          }
+          let theCost = getAdjustCostPrice(b,myAdjustDetails);
+          b._designerCostPrice = theCost;
+          b._designerUnitPrice = getBomUnitPrice(b.priceMethod,theCost,b.unitWeight),  //获取材料单价,
+          b._designerTotalPrice = b._designerUnitPrice * b.amount;
+        }
+
+        //我调后的价格
+        b._myCostPrice = b.costPrice;
+        b._myUnitPrice = b._unitPrice;
+        b._myTotalPrice = b._totalPrice;
+        if(this.planPriceAdjust.length > 0){
+          let myAdjustDetails = {}
+          for (const item of this.planPriceAdjust) {
+            if(item.who_adjust === this.myName){
+              myAdjustDetails = item.adjust_price_details
+              break
+            }
+          }
+          let theCost = getAdjustCostPrice(b,myAdjustDetails);
+          b._myCostPrice = theCost;
+          b._myUnitPrice = getBomUnitPrice(b.priceMethod,theCost,b.unitWeight),  //获取材料单价,
+          b._myTotalPrice = b._myUnitPrice * b.amount;
+        }
+      }
+
+      return nbom
+    },
+
+    //分表
+    tableData1(){
+      const items = ['04','05','06','07','08']
+      return this.divideBom(items)
+    },
+    tableData2(){
+      const items = ['09']
+      return this.divideBom(items)
+    },
+    tableData3(){
+      const items = ['01','02','03','20']
+      return this.divideBom(items)
+    },
+    tableDataErr(){
+      return this.trackerObj.resultList.bomErr;
+    },
+  },
+
+  methods: {
+
+    tableData_totalWeight(data){
+      return data.reduce((a,b)=>a+b.totalWeight,0)
+    },
+    tableData_totalPrice(data){
+      return data.reduce((a,b)=>a+b._totalPrice,0)
+    },
+    tableData_designerTotalPrice(data){
+      return data.reduce((a,b)=>a+b._designerTotalPrice,0)
+    },
+
+
+
+
+    //将表格分为三类，主材，紧固件，机械电气
+    divideBom(items){
+      let boms = [];
+      this.newBoms.forEach(b => {
+        if (items.includes(b.priceId.substring(0,2))) {
+          boms.push(b)
+        }
+      })
+      return boms
+    },
+    //显示小图
+    showImage(e) {
+      // console.log('this.thePartCode', this.thePartCode)
+      this.thePartCode = e.target.innerText
+      this.dwgVisible = false
+      if (this.imgObj[this.thePartCode] !== undefined && this.imgObj[this.thePartCode].indexOf('not be found') == -1) {
+        this.imageSrc = this.imgObj[this.thePartCode]
+      } else {
+        this.imageSrc = this.imgObj['imgNotFound']
+      }
+      this.imageVisible = true
+    },
+
+    showEChartClass1() {
+      let myChart = echarts.init(document.getElementById('class1'))
+      // let d = this.statistics[0].categroyA //按成本价统计
+      let d = getTrackerCategroyA(this.newBoms,{})
+      let tp = getTrackerTotal(this.newBoms)  //单个支架的总价
+      // 指定图表的配置项和数据
+      var option = {
+        title: {
+          text: '【系统】支架总价:' + tp.toFixed(2) + '(元)', // 这里设置标题的文本
+          left: 'center',  // 标题位置居中
+          // 可以在这里添加更多的标题样式配置，比如：
+          textStyle: {
+            color: '#337c99', // 标题文字颜色
+            fontSize: 20   // 标题文字大小
+          }
+        },
+        tooltip: {
+          trigger: 'item'
+        },
+        legend: {
+          orient: 'vertical',
+          left: 'left',
+          top: 'middle'
+        },
+        series: [
+          {
+            name: 'Access From',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+              borderRadius: 10,
+              borderColor: '#fff',
+              borderWidth: 2
+            },
+            label: {
+              show: false,
+              position: 'center'
+            },
+            emphasis: {
+              label: {
+                show: true,
+                fontSize: 40,
+                fontWeight: 'bold'
+              }
+            },
+            labelLine: {
+              show: false
+            },
+            data: [
+              {
+                value: d.drivesSystem.toFixed(2),
+                name: '减速机 ' + d.drivesSystem.toFixed(2) + ` [${(100 * d.drivesSystem / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.controlSystem.toFixed(2),
+                name: '控制系统 ' + d.controlSystem.toFixed(2) + ` [${(100 * d.controlSystem / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.damper.toFixed(2),
+                name: '阻尼 ' + d.damper.toFixed(2) + ` [${(100 * d.damper / tp).toFixed(1)}%]`
+              },
+              { value: d.post.toFixed(2), name: '立柱 ' + d.post.toFixed(2) + `[${(100 * d.post / tp).toFixed(1)}%]` },
+              {
+                value: d.torqueTube.toFixed(2),
+                name: '主梁 ' + d.torqueTube.toFixed(2) + ` [${(100 * d.torqueTube / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.purlin.toFixed(2),
+                name: '檩条 ' + d.purlin.toFixed(2) + ` [${(100 * d.purlin / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.stampingParts.toFixed(2),
+                name: '冲压件 ' + d.stampingParts.toFixed(2) + ` [${(100 * d.stampingParts / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.castingPart.toFixed(2),
+                name: '铸造件 ' + d.castingPart.toFixed(2) + ` [${(100 * d.castingPart / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.fastners.toFixed(2),
+                name: '紧固件 ' + d.fastners.toFixed(2) + ` [${(100 * d.fastners / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.others.toFixed(2),
+                name: '其它 ' + d.others.toFixed(2) + ` [${(100 * d.others / tp).toFixed(1)}%]`
+              }
+            ]
+          }
+        ]
+      }
+      myChart.setOption(option)// 使用刚指定的配置项和数据显示图表。spareParts
+    },
+
+    showEChartClass2() {
+      let myChart = echarts.init(document.getElementById('class2'))
+      let d = getTrackerCategroyA(this.newBoms,this.designerAdjustPriceDetail)  //计算各成分价
+      let tp = getTrackerTotalByDesigner(this.newBoms)  //单个支架的总价
+      // 指定图表的配置项和数据
+      var option = {
+        title: {
+          text: '【设计师:'+this.designer+'】支架总价:' + tp.toFixed(2) + '(元)', // 这里设置标题的文本
+          left: 'center',  // 标题位置居中
+          // 可以在这里添加更多的标题样式配置，比如：
+          textStyle: {
+            color: '#337c99', // 标题文字颜色
+            fontSize: 20   // 标题文字大小
+          }
+        },
+        tooltip: {
+          trigger: 'item'
+        },
+        legend: {
+          orient: 'vertical',
+          left: 'left',
+          top: 'middle'
+        },
+        series: [
+          {
+            name: 'Access From',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+              borderRadius: 10,
+              borderColor: '#fff',
+              borderWidth: 2
+            },
+            label: {
+              show: false,
+              position: 'center'
+            },
+            emphasis: {
+              label: {
+                show: true,
+                fontSize: 40,
+                fontWeight: 'bold'
+              }
+            },
+            labelLine: {
+              show: false
+            },
+            data: [
+              {
+                value: d.drivesSystem.toFixed(2),
+                name: '减速机 ' + d.drivesSystem.toFixed(2) + ` [${(100 * d.drivesSystem / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.controlSystem.toFixed(2),
+                name: '控制系统 ' + d.controlSystem.toFixed(2) + ` [${(100 * d.controlSystem / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.damper.toFixed(2),
+                name: '阻尼 ' + d.damper.toFixed(2) + ` [${(100 * d.damper / tp).toFixed(1)}%]`
+              },
+              { value: d.post.toFixed(2), name: '立柱 ' + d.post.toFixed(2) + `[${(100 * d.post / tp).toFixed(1)}%]` },
+              {
+                value: d.torqueTube.toFixed(2),
+                name: '主梁 ' + d.torqueTube.toFixed(2) + ` [${(100 * d.torqueTube / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.purlin.toFixed(2),
+                name: '檩条 ' + d.purlin.toFixed(2) + ` [${(100 * d.purlin / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.stampingParts.toFixed(2),
+                name: '冲压件 ' + d.stampingParts.toFixed(2) + ` [${(100 * d.stampingParts / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.castingPart.toFixed(2),
+                name: '铸造件 ' + d.castingPart.toFixed(2) + ` [${(100 * d.castingPart / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.fastners.toFixed(2),
+                name: '紧固件 ' + d.fastners.toFixed(2) + ` [${(100 * d.fastners / tp).toFixed(1)}%]`
+              },
+              {
+                value: d.others.toFixed(2),
+                name: '其它 ' + d.others.toFixed(2) + ` [${(100 * d.others / tp).toFixed(1)}%]`
+              }
+            ]
+          }
+        ]
+      }
+      myChart.setOption(option)// 使用刚指定的配置项和数据显示图表。spareParts
+    },
+
+    //从后台获取图片的base64编码字符串
+    fetchGetImgBase64(partNo) {
+      fetch(process.env.VUE_APP_BASE_API + '/api/getImgBase64', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: partNo
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.imgObj[partNo] = r.data
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+          return null
+        })
+    }
+  },
+  filters: {
+    filterFix(value, n) {
+      if (value != null && value > 0) {
+        return value.toFixed(n)
+      } else {
+        return 0
+      }
+    },
+    // filterFix(value){
+    //   if (value != null && value>0){
+    //     return value
+    //   }
+    //   else{
+    //     return ""
+    //   }
+    // },
+    filterCode(value) {
+      if (value != null && value.indexOf('BP') > -1) {
+        return value
+      } else {
+        return ''
+      }
+    }
+  },
+
+  props: {
+    trackerObj: {},  //传入一个支架信息
+    planPriceAdjust:{},  //传入所有调价信息
+    spareParts:{},//传入备品备件率
+    designer:'',
+    myName:''
+  },
+  mounted() {
+    console.log(this.trackerObj)
+    console.log(this.planPriceAdjust)
+    this.showEChartClass1()
+    this.showEChartClass2()
+    // this.showEChartClass3()
+
+    this.imgObj = {
+      'imgNotFound': 'data:image/png;base64,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'
+    }
+
+  }
+
+}
+
+
+</script>
+
+<style lang="scss" scoped>
+
+.scrollable-div {
+  height: 200px;
+  overflow-y: scroll;
+}
+
+table {
+  margin-left: 10px;
+  border-collapse: collapse; /* 确保边框不会重叠 */
+  border: 1px solid black; /* 设置表格边框颜色和宽度 */
+}
+
+table caption {
+  font-size: 36px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  margin-top: 10px;
+  /* 根据需要添加更多样式 */
+}
+
+
+th, td {
+  border: 1px solid black; /* 设置表格内部单元格边框颜色和宽度 */
+  text-align: center;
+}
+
+
+a {
+  color: #0e5ada;
+  text-decoration: underline;
+}
+
+//.table-caption {
+//  font-size: 36px;
+//  font-weight: bold;
+//  margin-bottom: 10px;
+//  margin-top: 10px;
+//  /* 根据需要添加更多样式 */
+//}
+
+.partImg {
+  z-index: 11;
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  width: 400px;
+  background-color: #cc1818;
+  transform: translate(-50%, -50%); /* 使用transform进行居中 */
+}
+
+.dwgImg {
+  z-index: 12;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1200px;
+  background-color: #cc1818;
+  transform: translate(-50%, -50%); /* 使用transform进行居中 */
+}
+
+</style>
+
+
+

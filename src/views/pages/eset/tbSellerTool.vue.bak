@@ -1,0 +1,495 @@
+<template>
+  <div class="container-seller-quotation">
+    <!-- quotation 1: cover（文案与缩略图一致；图片来自 Quotation.fig 内嵌资源） -->
+    <div
+      class="seller-quotation-frame seller-quotation-frame--1"
+      data-figma-frame="quotation 1"
+      aria-label="quotation 1"
+    >
+      <div class="sq-inner sq-inner--cover">
+        <header class="sq-cover-head">
+          <img class="sq-cover-logo" :src="assets.logo" width="300" height="78" alt="ESET SOLAR" />
+        </header>
+
+        <div class="sq-cover-hero">
+          <img class="sq-cover-hero-img" :src="assets.hero" alt="" />
+          <div class="sq-cover-hero-overlay">
+            <p class="sq-cover-kicker">TRACKER QUOTATION on XX MWp</p>
+            <p class="sq-cover-sub">at XXX, XXX PROJECT</p>
+          </div>
+        </div>
+
+        <div class="sq-cover-meta">
+          <p>Quotation date: 6-May-2026</p>
+          <p>Quotation valid until: 5-May-2026</p>
+          <p>
+            <a class="sq-link" href="mailto:ann.liu@eset.com">ann.liu@eset.com</a>
+          </p>
+        </div>
+
+        <p class="sq-cover-company">Jiangsu EverShine Energy Technology Co., Ltd.</p>
+
+        <div class="sq-cover-body">
+          <p>
+            This proposed technical solution and commercial offer has been prepared for the supply of ESEEK 1P solar
+            tracker with a total peak power of XX MWp, based on XXRp Bifacial module.
+          </p>
+          <p>
+            ESEEK solar tracker adopts Slew drive, which can have flexible design available, good adaptability for complex
+            terrain, and the innovation of diamond-shaped torque tube, providing better bending and torsional capabilities
+            with minimum material. ESET team will fully assist XXX from product design, production, transportation,
+            on-site guidance for installation and commissioning to ensure the success of the project.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- quotation 2: 技术方案（.fig 无法解析各 Frame 文本；使用项目 Quotation 默认字段，版式对齐封面字号与边距） -->
+    <div
+      class="seller-quotation-frame seller-quotation-frame--2"
+      data-figma-frame="quotation 2"
+      aria-label="quotation 2"
+    >
+      <div class="sq-inner sq-inner--document">
+        <header class="sq-doc-head">
+          <img class="sq-doc-logo" :src="assets.logo" width="300" height="78" alt="ESET SOLAR" />
+          <p class="sq-doc-headline">Proposed technical solution</p>
+        </header>
+
+        <div class="sq-spec-grid">
+          <div v-for="(row, idx) in specRows" :key="'spec-' + idx" class="sq-spec-row">
+            <div class="sq-spec-label">{{ row.label }}</div>
+            <div class="sq-spec-value sq-preline">{{ row.value }}</div>
+          </div>
+        </div>
+
+        <div class="sq-strip-wrap">
+          <img class="sq-strip-img" :src="assets.photoStrip" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <!-- quotation 3: 商务条款（同上） -->
+    <div
+      class="seller-quotation-frame seller-quotation-frame--3"
+      data-figma-frame="quotation 3"
+      aria-label="quotation 3"
+    >
+      <div class="sq-inner sq-inner--document">
+        <header class="sq-doc-head">
+          <img class="sq-doc-logo" :src="assets.logo" width="300" height="78" alt="ESET SOLAR" />
+          <p class="sq-doc-headline">Commercial summary &amp; delivery</p>
+        </header>
+
+        <section class="sq-section">
+          <h3 class="sq-section-title">Price &amp; payment terms</h3>
+          <div class="sq-price-item sq-preline">{{ q.price_and_payment_terms.item }}</div>
+          <table class="sq-table" aria-label="Price overview">
+            <tbody>
+              <tr>
+                <th scope="row">Design capacity (MWdc)</th>
+                <td>{{ q.price_and_payment_terms.design_capacity }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Foundation / description</th>
+                <td>{{ q.price_and_payment_terms.description }}</td>
+              </tr>
+              <tr>
+                <th scope="row">FOB (USD/W)</th>
+                <td>{{ q.price_and_payment_terms.FOB }}</td>
+              </tr>
+              <tr>
+                <th scope="row">CIF (USD/W)</th>
+                <td>{{ q.price_and_payment_terms.CIF }}</td>
+              </tr>
+              <tr>
+                <th scope="row">On-site engineer (USD/day)</th>
+                <td>{{ q.price_and_payment_terms.on_site_engineer }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="sq-section">
+          <h3 class="sq-section-title">Delivery &amp; warranty</h3>
+          <dl class="sq-dl">
+            <div class="sq-dl-row">
+              <dt>Incoterms</dt>
+              <dd>{{ q.delivery_warranty.incoterms_2010 }}</dd>
+            </div>
+            <div class="sq-dl-row">
+              <dt>Port of departure</dt>
+              <dd>{{ q.delivery_warranty.port_of_departure }}</dd>
+            </div>
+            <div class="sq-dl-row">
+              <dt>No. of containers</dt>
+              <dd>{{ q.delivery_warranty.no_of_containers }}</dd>
+            </div>
+            <div class="sq-dl-row">
+              <dt>First delivery lead time</dt>
+              <dd>{{ q.delivery_warranty.first_delivery_lead_time }}</dd>
+            </div>
+            <div class="sq-dl-row">
+              <dt>Estimated delivery rate</dt>
+              <dd>{{ q.delivery_warranty.estimated_delivery_rate }}</dd>
+            </div>
+            <div class="sq-dl-row">
+              <dt>Warranty — steel structural</dt>
+              <dd>{{ q.delivery_warranty.steel_structural_components }}</dd>
+            </div>
+            <div class="sq-dl-row">
+              <dt>Warranty — electro-mechanical</dt>
+              <dd>{{ q.delivery_warranty.electro_mechanical_components }}</dd>
+            </div>
+            <div class="sq-dl-row">
+              <dt>Warranty — galvanizing</dt>
+              <dd>{{ q.delivery_warranty.galvanizing_protection }}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { Quotation } from '@/views/pages/eset/trackers2/utils/classQuotation'
+import logoUrl from './tbSellerToolAssets/fromFig/logo.png'
+import heroUrl from './tbSellerToolAssets/fromFig/hero.png'
+import photoStripUrl from './tbSellerToolAssets/fromFig/photo-strip.png'
+
+export default {
+  name: 'TbSellerQuotation',
+  data() {
+    return {
+      q: new Quotation(),
+      assets: {
+        logo: logoUrl,
+        hero: heroUrl,
+        photoStrip: photoStripUrl,
+      },
+    }
+  },
+  computed: {
+    specRows() {
+      const p = this.q.proposed_tracker_solution
+      return [
+        { label: 'Product', value: p.product },
+        { label: 'Drive system', value: p.drive_system },
+        { label: 'Control & communication', value: p.control_communication },
+        { label: 'Power source', value: p.power_source },
+        { label: 'Design wind speed', value: p.design_wind_speed },
+        { label: 'Corrosion protection', value: p.corrosion_protection },
+        { label: 'Post type & embedment depth', value: p.post_type_embedments_depth },
+        { label: 'Module power', value: p.module_power },
+        { label: 'Module / strings', value: p.module_no_strings },
+        { label: 'Operation features', value: p.operation_features },
+        { label: 'Slope available', value: p.slope_available },
+        { label: 'Rotation features', value: p.rotation_features },
+        { label: 'Design life', value: p.design },
+      ]
+    },
+  },
+}
+</script>
+
+<style lang="scss" scoped>
+/* 版式按 800×1130「成品框」：与常见 A4 比例接近，正文约 9.75pt≈13px */
+$sq-brand: #113e8d;
+$sq-text: #1a1a1a;
+$sq-muted: #3d3d3d;
+$sq-pad-x: 40px;
+$sq-pad-y: 28px;
+$sq-body: 13px;
+$sq-line: 1.55;
+
+.container-seller-quotation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* 页与页之间的分隔线（第 2、3 页顶部），外边距留出空隙便于辨认分页 */
+.seller-quotation-frame + .seller-quotation-frame {
+  margin-top: 24px;
+  border-top: 1px solid #c5cbd6;
+}
+
+.seller-quotation-frame {
+  width: 800px;
+  height: 1130px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  color: $sq-text;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: $sq-body;
+  line-height: $sq-line;
+}
+
+.seller-quotation-frame--1 {
+  background: #f5f7fb;
+}
+
+.seller-quotation-frame--2 {
+  background: #f4f6fa;
+}
+
+.seller-quotation-frame--3 {
+  background: #f6f5fa;
+}
+
+.sq-inner {
+  box-sizing: border-box;
+  height: 100%;
+  overflow: auto;
+  padding: $sq-pad-y $sq-pad-x 32px;
+}
+
+/* —— Page 1 cover —— */
+.sq-inner--cover {
+  padding-top: 22px;
+}
+
+.sq-cover-head {
+  margin-bottom: 14px;
+}
+
+.sq-cover-logo {
+  display: block;
+  height: 48px;
+  width: auto;
+}
+
+.sq-cover-hero {
+  position: relative;
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+.sq-cover-hero-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sq-cover-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* 略减轻遮罩，便于黑色标题在天空/地面区域对比可读 */
+  background: rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.sq-cover-hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: center;
+  padding: 16px 16px 52px;
+}
+
+.sq-cover-kicker {
+  margin: 0 0 8px;
+  color: #0a0a0a;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.85),
+    0 1px 2px rgba(255, 255, 255, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.sq-cover-sub {
+  margin: 0;
+  color: #141414;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  text-shadow:
+    0 0 8px rgba(255, 255, 255, 0.8),
+    0 1px 2px rgba(255, 255, 255, 0.85),
+    0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.sq-cover-meta {
+  text-align: right;
+  font-size: 12.5px;
+  margin-bottom: 14px;
+}
+
+.sq-cover-meta p {
+  margin: 2px 0;
+}
+
+.sq-link {
+  color: $sq-brand;
+  text-decoration: none;
+}
+
+.sq-link:hover {
+  text-decoration: underline;
+}
+
+.sq-cover-company {
+  margin: 0 0 18px;
+  text-align: center;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.sq-cover-body p {
+  margin: 0 0 12px;
+  font-size: $sq-body;
+  color: $sq-muted;
+  text-align: left;
+}
+
+.sq-cover-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* —— Pages 2–3 document —— */
+.sq-doc-head {
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.sq-doc-logo {
+  display: block;
+  height: 40px;
+  width: auto;
+  margin-bottom: 10px;
+}
+
+.sq-doc-headline {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: $sq-brand;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sq-spec-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sq-spec-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 12px 16px;
+  align-items: start;
+}
+
+.sq-spec-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: $sq-text;
+  line-height: $sq-line;
+}
+
+.sq-spec-value {
+  font-size: 12px;
+  color: $sq-muted;
+  line-height: $sq-line;
+}
+
+.sq-preline {
+  white-space: pre-line;
+}
+
+.sq-strip-wrap {
+  margin-top: 18px;
+}
+
+.sq-strip-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 2px;
+}
+
+.sq-section {
+  margin-bottom: 18px;
+}
+
+.sq-section:last-child {
+  margin-bottom: 0;
+}
+
+.sq-section-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: $sq-brand;
+  letter-spacing: 0.03em;
+}
+
+.sq-price-item {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: $sq-muted;
+}
+
+.sq-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.sq-table th,
+.sq-table td {
+  border: 1px solid #ddd;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.sq-table th {
+  width: 42%;
+  text-align: left;
+  font-weight: 600;
+  background: #f7f7f7;
+}
+
+.sq-dl {
+  margin: 0;
+}
+
+.sq-dl-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 8px 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 12px;
+}
+
+.sq-dl-row:last-child {
+  border-bottom: none;
+}
+
+.sq-dl dt {
+  margin: 0;
+  font-weight: 600;
+  color: $sq-text;
+}
+
+.sq-dl dd {
+  margin: 0;
+  color: $sq-muted;
+}
+</style>

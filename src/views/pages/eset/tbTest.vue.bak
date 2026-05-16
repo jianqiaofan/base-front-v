@@ -1,0 +1,101 @@
+<template>
+  <div class="test-container scrollable-div">
+    <h1>test</h1>
+    <el-dialog title="添加/修改" :visible.sync="dialogVisible" width="40%" :close-on-click-modal="false">
+      <el-form ref="dataForm" :model="pricingInfo" :rules="rules" label-width="100px" size="small"
+               style="padding-right: 40px;"
+      >
+        <el-form-item label="客户方" prop="client">
+          <el-input v-model="pricingInfo.client" clearable/>
+        </el-form-item>
+        <el-form-item label="项目地/港口" prop="site">
+          <el-input v-model="pricingInfo.site" clearable/>
+        </el-form-item>
+        <el-form-item label="项目批次" prop="batch">
+          <el-input v-model="pricingInfo.batch" clearable/>
+        </el-form-item>
+        <el-form-item label="参与友商" prop="competition">
+          <el-input v-model="pricingInfo.competition" clearable/>
+        </el-form-item>
+        <el-form-item label="防腐镀锌要求" prop="galvanizing">
+          <el-input v-model="pricingInfo.galvanizing" clearable/>
+        </el-form-item>
+        <el-form-item label="公差要求" prop="tolerance">
+          <el-select v-model="pricingInfo.tolerance" placeholder="请选择">
+            <el-option label="执行ISO国际标准" value="执行ISO国际标准"></el-option>
+            <el-option label="执行GB国际标准" value="执行GB国际标准"></el-option>
+            <el-option label="无负公差" value="无负公差"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="包装要求" prop="packaging">
+          <el-input v-model="pricingInfo.packaging" clearable/>
+        </el-form-item>
+        <el-form-item label="客户特殊要求" prop="special">
+          <el-input v-model="pricingInfo.special" clearable/>
+        </el-form-item>
+        <el-form-item label="价格交付条款" prop="delivery">
+          <el-input v-model="pricingInfo.delivery" clearable/>
+        </el-form-item>
+        <el-form-item label="支付条款" prop="payment">
+          <el-input v-model="pricingInfo.payment" clearable/>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false" size="small" icon="el-icon-refresh-right">取 消</el-button>
+        <el-button type="primary" icon="el-icon-check" @click="saveOrUpdate()" size="small">确 定</el-button>
+      </span>
+    </el-dialog>
+  </div>
+
+</template>
+
+<script>
+
+
+export default {
+  name: 'tbTest',
+  data() {
+    return {
+      dialogVisible: true,
+      rules: {},
+      pricingInfo: {
+        client: '',
+        site: '',
+        batch: '',
+        competition: '',
+        galvanizing: '',
+        tolerance: '',
+        packaging: '',
+        special: '',
+        delivery: '',
+        payment: ''
+      }
+    }
+  },
+  methods: {},
+  props: {}
+
+}
+</script>
+
+<style scoped>
+.test-container {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: left;
+  color: #2c3e50;
+  margin-top: 20px;
+  max-width: 100%; /* 限制容器宽度不超过屏幕宽度 */
+  overflow-x: auto; /* 当内容宽度超过容器宽度时显示水平滚动条 */
+}
+
+
+</style>
+
+
+
+
+
+
+
