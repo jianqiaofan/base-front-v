@@ -244,8 +244,18 @@
 
 
         <h3>毛利率与运输条款</h3>
-        <div style="width: 1600px">
-          <el-table height="600px" :data="basicPrice" border stripe size="small" style="width: 1200px">
+        <div class="basic-price-table-wrap" style="width: 1600px">
+          <el-table
+            height="600px"
+            :data="basicPrice"
+            border
+            stripe
+            size="small"
+            style="width: 1200px"
+            :row-class-name="basicPriceRowClassName"
+            @cell-mouse-enter="onBasicPriceRowEnter"
+            @cell-mouse-leave="onBasicPriceRowLeave"
+          >
             <el-table-column prop="margin" label="Margin" width="80px" fixed="left"></el-table-column>
             <el-table-column prop="rmb_exw" label="rmb_exw" width="90px" :formatter="formatNumber4"></el-table-column>
             <el-table-column prop="rmb_fob" label="rmb_fob" width="90px" :formatter="formatNumber4"></el-table-column>
@@ -263,7 +273,29 @@
             <el-table-column prop="eur_dap" label="eur_dap" width="90px" :formatter="formatNumber4"></el-table-column>
             <el-table-column prop="eur_ddp" label="eur_ddp" width="90px" :formatter="formatNumber4"></el-table-column>
           </el-table>
-
+          <transition name="el-fade-in-linear">
+            <div
+              v-show="basicPriceRowTip.visible"
+              class="basic-price-row-tip"
+              :style="basicPriceRowTipStyle"
+              @mouseenter="cancelBasicPriceRowTipHide"
+              @mouseleave="scheduleBasicPriceRowTipHide"
+            >
+              <div class="basic-price-row-tip__title">
+                Margin {{ basicPriceRowTip.row && basicPriceRowTip.row.margin }}%
+              </div>
+              <div
+                v-for="col in basicPriceColumnDefs.filter(c => !c.isMargin)"
+                :key="col.prop"
+                class="basic-price-row-tip__line"
+              >
+                <span class="basic-price-row-tip__label">{{ col.label }}</span>
+                <span class="basic-price-row-tip__value">{{
+                  formatBasicPriceCell(basicPriceRowTip.row, col)
+                }}</span>
+              </div>
+            </div>
+          </transition>
         </div>
         <div>
           <p>贸易术语名称解释：</p>
@@ -314,11 +346,43 @@ export default {
         startY: 0,
         originLeft: 0,
         originTop: 0
-      }
+      },
+      basicPriceColumnDefs: [
+        { prop: 'margin', label: 'Margin', isMargin: true },
+        { prop: 'rmb_exw', label: 'rmb_exw' },
+        { prop: 'rmb_fob', label: 'rmb_fob' },
+        { prop: 'rmb_cif', label: 'rmb_cif' },
+        { prop: 'rmb_dap', label: 'rmb_dap' },
+        { prop: 'rmb_ddp', label: 'rmb_ddp' },
+        { prop: 'usd_exw', label: 'usd_exw' },
+        { prop: 'usd_fob', label: 'usd_fob' },
+        { prop: 'usd_cif', label: 'usd_cif' },
+        { prop: 'usd_dap', label: 'usd_dap' },
+        { prop: 'usd_ddp', label: 'usd_ddp' },
+        { prop: 'eur_exw', label: 'eur_exw' },
+        { prop: 'eur_fob', label: 'eur_fob' },
+        { prop: 'eur_cif', label: 'eur_cif' },
+        { prop: 'eur_dap', label: 'eur_dap' },
+        { prop: 'eur_ddp', label: 'eur_ddp' }
+      ],
+      basicPriceRowTip: {
+        visible: false,
+        top: 0,
+        left: 0,
+        row: null
+      },
+      basicPriceRowTipHideTimer: null,
+      basicPriceActiveRowKey: null
     }
   },
   computed: {
     ...mapGetters(['name']),
+    basicPriceRowTipStyle() {
+      return {
+        top: `${this.basicPriceRowTip.top}px`,
+        left: `${this.basicPriceRowTip.left}px`
+      }
+    },
     theProjectAndPlanObj() {
       const src = this.projectAndPlan || {}
       return {
@@ -467,6 +531,68 @@ export default {
       const maxL = Math.max(m, window.innerWidth - panelW - m)
       this.headTitlePos.left = Math.min(this.headTitlePos.left, maxL)
       this.headTitlePos.top = Math.min(this.headTitlePos.top, Math.max(m, window.innerHeight - 80))
+    },
+    /** Element UI 2.x 使用 cell-mouse-enter，无 row-mouse-enter */
+    onBasicPriceRowEnter(row, column, cell, event) {
+      this.cancelBasicPriceRowTipHide()
+      if (!row) return
+      const el = (event && event.target) || cell
+      const tr = el && el.closest ? el.closest('tr') : null
+      if (!tr) return
+      const rect = tr.getBoundingClientRect()
+      const tipW = 300
+      const tipMaxH = 420
+      let left = rect.right + 12
+      if (left + tipW > window.innerWidth - 8) {
+        left = Math.max(8, rect.left - tipW - 12)
+      }
+      let top = rect.top
+      if (top + tipMaxH > window.innerHeight - 8) {
+        top = Math.max(8, window.innerHeight - tipMaxH - 8)
+      }
+      this.basicPriceActiveRowKey = row.margin
+      this.basicPriceRowTip = {
+        visible: true,
+        top,
+        left,
+        row
+      }
+    },
+    basicPriceRowClassName({ row }) {
+      if (this.basicPriceActiveRowKey !== null && row && row.margin === this.basicPriceActiveRowKey) {
+        return 'basic-price-row--active'
+      }
+      return ''
+    },
+    onBasicPriceRowLeave() {
+      this.scheduleBasicPriceRowTipHide()
+    },
+    scheduleBasicPriceRowTipHide() {
+      this.cancelBasicPriceRowTipHide()
+      this.basicPriceRowTipHideTimer = setTimeout(() => {
+        this.basicPriceRowTip.visible = false
+        this.basicPriceRowTip.row = null
+        this.basicPriceActiveRowKey = null
+      }, 120)
+    },
+    cancelBasicPriceRowTipHide() {
+      if (this.basicPriceRowTipHideTimer) {
+        clearTimeout(this.basicPriceRowTipHideTimer)
+        this.basicPriceRowTipHideTimer = null
+      }
+    },
+    formatBasicPriceCell(row, col) {
+      if (!row || !col) return ''
+      const cellValue = row[col.prop]
+      if (col.isMargin) {
+        return cellValue
+      }
+      if (typeof cellValue === 'number') {
+        if (cellValue === 0) return ''
+        if (Number.isInteger(cellValue)) return cellValue
+        return cellValue.toFixed(8)
+      }
+      return cellValue
     },
     //初始化要输入内容
     initForm(planResult) {
@@ -756,6 +882,7 @@ export default {
     window.addEventListener('resize', this.onHeadTitleViewportResize)
   },
   beforeDestroy() {
+    this.cancelBasicPriceRowTipHide()
     document.removeEventListener('mousemove', this.onHeadTitleDragMove)
     document.removeEventListener('mouseup', this.onHeadTitleDragEnd)
     window.removeEventListener('resize', this.onHeadTitleViewportResize)
@@ -1100,5 +1227,69 @@ export default {
 .head-title__body p:last-child {
   border-bottom: none;
   padding-bottom: 0;
+}
+
+/* 毛利率表行悬停详情 */
+.basic-price-table-wrap {
+  position: relative;
+}
+
+.basic-price-table-wrap ::v-deep tr.basic-price-row--active > td {
+  background-color: #d9ecff !important;
+}
+
+.basic-price-table-wrap ::v-deep tr.basic-price-row--active:hover > td {
+  background-color: #c6e2ff !important;
+}
+
+.basic-price-row-tip {
+  position: fixed;
+  z-index: 3000;
+  width: 300px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  pointer-events: auto;
+}
+
+.basic-price-row-tip__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #409eff;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.basic-price-row-tip__line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed #ebeef5;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.basic-price-row-tip__line:last-child {
+  border-bottom: none;
+}
+
+.basic-price-row-tip__label {
+  flex-shrink: 0;
+  color: #909399;
+}
+
+.basic-price-row-tip__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #303133;
+  font-weight: 500;
+  word-break: break-all;
 }
 </style>
