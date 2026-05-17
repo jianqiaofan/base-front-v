@@ -1,26 +1,29 @@
 <template>
   <div class="resultforseller-container scrollable-div">
-    <div
-      class="head-title"
-      :class="{ 'head-title--dragging': headTitleDrag.active }"
-      :style="headTitlePanelStyle"
-    >
-      <div
-        class="head-title__drag-bar"
-        title="拖动移动面板"
-        @mousedown.stop.prevent="onHeadTitleDragStart"
-      >
+    <div class="head-title" :class="{
+      'head-title--dragging': headTitleDrag.active,
+      'head-title--minimized': headTitleMinimized
+    }" :style="headTitlePanelStyle">
+      <div class="head-title__drag-bar" title="拖动移动面板" @mousedown.stop.prevent="onHeadTitleDragStart">
         <span class="head-title__eco-icon" aria-hidden="true" />
-        <span class="head-title__badge">{{ lgc ? '方案摘要' : 'Plan' }}</span>
-        <span class="head-title__hint">{{ lgc ? '拖拽移动' : 'Drag' }}</span>
+        <span v-if="headTitleMinimized" class="head-title__summary" :title="headTitleSummaryText">{{
+          headTitleSummaryText }}</span>
+        <template v-else>
+          <span class="head-title__badge">Plan</span>
+          <span class="head-title__hint">Drag</span>
+        </template>
+        <button type="button" class="head-title__toggle-btn" :title="headTitleMinimized ? '恢复' : '最小化'" @mousedown.stop
+          @click.stop="toggleHeadTitleMinimize">
+          <i :class="headTitleMinimized ? 'el-icon-full-screen' : 'el-icon-minus'"></i>
+        </button>
       </div>
-      <div class="head-title__body">
-        <p>{{ lgc ? '当前用户' : 'USER' }}：{{ name }}</p>
-        <p>{{ tsl.project_code[lgc] }}：{{ theProjectAndPlanObj.project_code }}</p>
-        <p>{{ tsl.project_name[lgc] }}：{{ theProjectAndPlanObj.project_name }}</p>
-        <p>{{ tsl.plan_description[lgc] }}：{{ theProjectAndPlanObj.plan_description }}</p>
-        <p>{{ tsl.sale_manager[lgc] }}：{{ theProjectAndPlanObj.seller }}</p>
-        <p>{{ tsl.designer[lgc] }}：{{ theProjectAndPlanObj.designer }}</p>
+      <div v-show="!headTitleMinimized" class="head-title__body">
+        <p>当前用户：{{ name }}</p>
+        <p>项目编号：{{ theProjectAndPlanObj.project_code }}</p>
+        <p>项目名称：{{ theProjectAndPlanObj.project_name }}</p>
+        <p>方案名称：{{ theProjectAndPlanObj.plan_description }}</p>
+        <p>销售经理：{{ theProjectAndPlanObj.seller }}</p>
+        <p>设计师：{{ theProjectAndPlanObj.designer }}</p>
       </div>
     </div>
     <el-collapse v-model="activeNames" @change="handleChange">
@@ -96,7 +99,7 @@
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
-            <span style="margin-left: 8px; font-weight: bold;">运输费、利润 Transportation costs and profits</span>
+            <span style="margin-left: 8px; font-weight: bold;">非材料费(运费、服务费等) Non-material costs(transportation costs, service costs, etc.)</span>
           </div>
         </template>
         <h3>汇率换算</h3>
@@ -205,57 +208,40 @@
             <el-form-item label="安装指导费">
               <el-switch v-model="form.guide_fee_switch" active-text="有" inactive-text="无">
               </el-switch>
-              <el-input
-                v-show="form.guide_fee_switch"
-                v-model="form.guide_fee"
-                placeholder="安装指导费"
-                style="width:80px; margin-left: 10px"
-                size="mini"
-              ></el-input>
+              <el-input v-show="form.guide_fee_switch" v-model="form.guide_fee" placeholder="安装指导费"
+                style="width:80px; margin-left: 10px" size="mini"></el-input>
               <span v-show="form.guide_fee_switch" class="other-fee-form__unit">($/day)</span>
               <span v-show="form.guide_fee_switch" class="other-fee-form__hint">共{{ form.guide_days }}天</span>
             </el-form-item>
             <el-form-item label="保函和财务费">
               <el-switch v-model="form.guarantee_and_financial_fees_switch" active-text="有" inactive-text="无">
               </el-switch>
-              <el-input
-                v-show="form.guarantee_and_financial_fees_switch"
-                v-model="form.guarantee_and_financial_fees"
-                placeholder="财务费等"
-                style="width:130px; margin-left: 10px"
-                size="mini"
-              ></el-input>
+              <el-input v-show="form.guarantee_and_financial_fees_switch" v-model="form.guarantee_and_financial_fees"
+                placeholder="财务费等" style="width:130px; margin-left: 10px" size="mini"></el-input>
               <span v-show="form.guarantee_and_financial_fees_switch" class="other-fee-form__unit">(¥)</span>
             </el-form-item>
             <el-form-item label="第三方审核费">
               <el-switch v-model="form.third_party_audit_fee_switch" active-text="有" inactive-text="无">
               </el-switch>
-              <el-input
-                v-show="form.third_party_audit_fee_switch"
-                v-model="form.third_party_audit_fee"
-                placeholder="第三方审核费"
-                style="width:130px; margin-left: 10px"
-                size="mini"
-              ></el-input>
+              <el-input v-show="form.third_party_audit_fee_switch" v-model="form.third_party_audit_fee"
+                placeholder="第三方审核费" style="width:130px; margin-left: 10px" size="mini"></el-input>
               <span v-show="form.third_party_audit_fee_switch" class="other-fee-form__unit">(¥)</span>
             </el-form-item>
           </el-form>
         </div>
-
-
+      </el-collapse-item>
+      <el-collapse-item name="4">
+        <template #title>
+          <div style="color: red; display: flex; align-items: center; font-size: 18px">
+            <i class="el-icon-info"></i> <!-- 图标 -->
+            <span style="margin-left: 8px; font-weight: bold;">报价价格(按瓦单价) Quotation price (per watt)</span>
+          </div>
+        </template>
         <h3>毛利率与运输条款</h3>
         <div class="basic-price-table-wrap" style="width: 1600px">
-          <el-table
-            height="600px"
-            :data="basicPrice"
-            border
-            stripe
-            size="small"
-            style="width: 1200px"
-            :row-class-name="basicPriceRowClassName"
-            @cell-mouse-enter="onBasicPriceRowEnter"
-            @cell-mouse-leave="onBasicPriceRowLeave"
-          >
+          <el-table ref="basicPriceTable" height="600px" :data="basicPrice" border stripe size="small"
+            style="width: 1200px" :row-class-name="basicPriceRowClassName" @cell-mouse-enter="onBasicPriceRowEnter"
+            @cell-mouse-leave="onBasicPriceRowLeave">
             <el-table-column prop="margin" label="Margin" width="80px" fixed="left"></el-table-column>
             <el-table-column prop="rmb_exw" label="rmb_exw" width="90px" :formatter="formatNumber4"></el-table-column>
             <el-table-column prop="rmb_fob" label="rmb_fob" width="90px" :formatter="formatNumber4"></el-table-column>
@@ -274,25 +260,69 @@
             <el-table-column prop="eur_ddp" label="eur_ddp" width="90px" :formatter="formatNumber4"></el-table-column>
           </el-table>
           <transition name="el-fade-in-linear">
-            <div
-              v-show="basicPriceRowTip.visible"
-              class="basic-price-row-tip"
-              :style="basicPriceRowTipStyle"
-              @mouseenter="cancelBasicPriceRowTipHide"
-              @mouseleave="scheduleBasicPriceRowTipHide"
-            >
-              <div class="basic-price-row-tip__title">
-                Margin {{ basicPriceRowTip.row && basicPriceRowTip.row.margin }}%
+            <div v-show="basicPriceRowTip.visible" class="basic-price-row-tip" :class="{
+              'basic-price-row-tip--pinned': basicPriceRowTip.pinned,
+              'basic-price-row-tip--dragging': basicPriceRowTipDrag.active
+            }" :style="basicPriceRowTipStyle" @mouseenter="cancelBasicPriceRowTipHide"
+              @mouseleave="onBasicPriceRowTipMouseLeave">
+              <div class="basic-price-row-tip__header" title="拖拽移动"
+                @mousedown.stop.prevent="onBasicPriceRowTipDragStart">
+                <div class="basic-price-row-tip__title">
+                  Margin {{ basicPriceRowTip.row && basicPriceRowTip.row.margin }}%
+                </div>
+                <div class="basic-price-row-tip__actions">
+                  <el-button type="text" size="mini" class="basic-price-row-tip__action-btn"
+                    :class="{ 'basic-price-row-tip__action-btn--active': basicPriceRowTip.pinned }"
+                    :title="basicPriceRowTip.pinned ? '取消固定' : '固定（失焦不关闭，Margin 不变）'"
+                    @click.stop="toggleBasicPriceRowTipPin">
+                    <i :class="basicPriceRowTip.pinned ? 'el-icon-unlock' : 'el-icon-lock'"></i>
+                  </el-button>
+                  <el-button type="text" size="mini"
+                    class="basic-price-row-tip__action-btn basic-price-row-tip__action-btn--close" title="关闭"
+                    @click.stop="closeBasicPriceRowTip">
+                    <i class="el-icon-close"></i>
+                  </el-button>
+                </div>
               </div>
-              <div
-                v-for="col in basicPriceColumnDefs.filter(c => !c.isMargin)"
-                :key="col.prop"
-                class="basic-price-row-tip__line"
-              >
-                <span class="basic-price-row-tip__label">{{ col.label }}</span>
-                <span class="basic-price-row-tip__value">{{
-                  formatBasicPriceCell(basicPriceRowTip.row, col)
-                }}</span>
+              <table class="basic-price-row-tip__table">
+                <thead>
+                  <tr>
+                    <th class="basic-price-row-tip__table-corner"></th>
+                    <th v-for="cur in basicPriceTipCurrencies" :key="cur.key" class="basic-price-row-tip__table-head">{{
+                      cur.label }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="term in basicPriceTipTerms" :key="term">
+                    <th class="basic-price-row-tip__table-term">{{ term }}</th>
+                    <td v-for="cur in basicPriceTipCurrencies" :key="cur.key + term"
+                      class="basic-price-row-tip__table-cell">{{ formatBasicPriceTipValue(basicPriceRowTip.row, cur.key,
+                      term) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="basic-price-row-tip__margin" @mousedown.stop @click.stop>
+                <span class="basic-price-row-tip__margin-label">利润率</span>
+                <el-input-number
+                  v-model="basicPriceRowTipMarginInput"
+                  size="mini"
+                  :step="0.01"
+                  :precision="2"
+                  :min="0"
+                  :max="99.99"
+                  controls-position="right"
+                  class="basic-price-row-tip__margin-input"
+                  @change="onBasicPriceRowTipMarginChange"
+                />
+                <span class="basic-price-row-tip__margin-unit">%</span>
+                <el-button
+                  type="primary"
+                  size="mini"
+                  icon="el-icon-refresh"
+                  class="basic-price-row-tip__refresh-btn"
+                  title="刷新计算"
+                  @click.stop="refreshBasicPriceRowTip"
+                >刷新</el-button>
               </div>
             </div>
           </transition>
@@ -312,7 +342,6 @@
         </div>
       </el-collapse-item>
 
-
     </el-collapse>
 
 
@@ -328,17 +357,9 @@ export default {
   name: 'ResultForSeller',
   data() {
     return {
-      activeNames: ['3'],
+      activeNames: ['3','4'],
       form: {},
       exchangeRateLoading: false,
-      lgc: 1,
-      tsl: {
-        project_code: ['Project Code', '项目编号'],
-        project_name: ['Project Name', '项目名称'],
-        plan_description: ['Plan Description', '方案名称'],
-        sale_manager: ['Sale Manager', '销售经理'],
-        designer: ['Designer', '设计师']
-      },
       headTitlePos: { left: 0, top: 600 },
       headTitleDrag: {
         active: false,
@@ -347,32 +368,30 @@ export default {
         originLeft: 0,
         originTop: 0
       },
-      basicPriceColumnDefs: [
-        { prop: 'margin', label: 'Margin', isMargin: true },
-        { prop: 'rmb_exw', label: 'rmb_exw' },
-        { prop: 'rmb_fob', label: 'rmb_fob' },
-        { prop: 'rmb_cif', label: 'rmb_cif' },
-        { prop: 'rmb_dap', label: 'rmb_dap' },
-        { prop: 'rmb_ddp', label: 'rmb_ddp' },
-        { prop: 'usd_exw', label: 'usd_exw' },
-        { prop: 'usd_fob', label: 'usd_fob' },
-        { prop: 'usd_cif', label: 'usd_cif' },
-        { prop: 'usd_dap', label: 'usd_dap' },
-        { prop: 'usd_ddp', label: 'usd_ddp' },
-        { prop: 'eur_exw', label: 'eur_exw' },
-        { prop: 'eur_fob', label: 'eur_fob' },
-        { prop: 'eur_cif', label: 'eur_cif' },
-        { prop: 'eur_dap', label: 'eur_dap' },
-        { prop: 'eur_ddp', label: 'eur_ddp' }
+      headTitleMinimized: false,
+      basicPriceTipTerms: ['exw', 'fob', 'cif', 'dap', 'ddp'],
+      basicPriceTipCurrencies: [
+        { key: 'rmb', label: 'RMB(人民币)' },
+        { key: 'usd', label: 'USD(美元)' },
+        { key: 'eur', label: 'EUR(欧元)' }
       ],
       basicPriceRowTip: {
         visible: false,
         top: 0,
         left: 0,
-        row: null
+        row: null,
+        pinned: false
+      },
+      basicPriceRowTipDrag: {
+        active: false,
+        startX: 0,
+        startY: 0,
+        originLeft: 0,
+        originTop: 0
       },
       basicPriceRowTipHideTimer: null,
-      basicPriceActiveRowKey: null
+      basicPriceActiveRowKey: null,
+      basicPriceRowTipMarginInput: 0
     }
   },
   computed: {
@@ -399,6 +418,12 @@ export default {
         top: `${this.headTitlePos.top}px`
       }
     },
+    headTitleSummaryText() {
+      const code = this.theProjectAndPlanObj.project_code
+      const name = this.theProjectAndPlanObj.project_name
+      if (code && name) return `${code}|${name}`
+      return code || name || 'Plan'
+    },
     planTotalCapacity() {
       if (!this.planResult) return undefined
       return this.planResult.planCapacity  //总容量，到处都要用到
@@ -406,10 +431,27 @@ export default {
     materialFee() {
       return this.materialFeeAndWeight(this.planResult)
     },
+
     basicPrice() {
       const processSite = this.form && this.form.process_site
       if (!Array.isArray(processSite) || processSite.length === 0) {
         return []
+      }
+      const marginTable = []
+      for (let margin = 0; margin < 31; margin++) {
+        marginTable.push(this.getBasicPriceByMargin(margin))
+      }
+      return marginTable
+    }
+  },
+
+
+  methods: {
+    //通过毛利率计算各价格
+    getBasicPriceByMargin(margin) {
+      const processSite = this.form && this.form.process_site
+      if (!Array.isArray(processSite) || processSite.length === 0) {
+        return null
       }
       let capacity = this.planTotalCapacity
 
@@ -440,53 +482,48 @@ export default {
       const delivery_project_site = siteCosts.reduce((a, b) => a + 1 * b.delivery_project_site, 0)  //运费(目地国)
       const tariff = siteCosts.reduce((a, b) => a + 1 * b.tariff, 0)  //进口关税
       const tax_refund = siteCosts.reduce((a, b) => a + 1 * b.tax_refund, 0)  //出口退税
-      const guide_fee = this.form.guide_fee_switch ? this.form.guide_fee * this.form.guide_days * this.form.exchange_rate_usd :0 //安装指导
-      const guarantee_and_financial_fees = this.form.guarantee_and_financial_fees_switch ? 1 * this.form.guarantee_and_financial_fees :0  //保函等财务费用
-      const third_party_audit_fee = this.form.third_party_audit_fee_switch ? 1 * this.form.third_party_audit_fee :0  //第三方审核费
-      let usd = this.form.exchange_rate_usd * (1 + 0.01 * this.form.exchange_rate_handling_fee)
-      let eur = this.form.exchange_rate_eur * (1 + 0.01 * this.form.exchange_rate_handling_fee)
-      let marginTable = []
-      for (let margin = 0; margin < 31; margin++) {
-        let rmb_exw = (material_cost - tax_refund) / (1 - 0.01 * margin) + guide_fee + guarantee_and_financial_fees + third_party_audit_fee
-        let rmb_fob = rmb_exw + delivery_process_site  //只含生产地运费
-        let rmb_cif = rmb_exw + delivery_process_site + delivery_sea  //含生产地运费，海上运费
-        let rmb_dap = rmb_exw + delivery_process_site + delivery_sea + delivery_project_site //含全部三段运费
-        let rmb_ddp = rmb_dap + tariff  //含税
-        marginTable.push({
-          margin: margin,
-          rmb_exw: rmb_exw / capacity,
-          rmb_fob: rmb_fob / capacity,
-          rmb_cif: rmb_cif / capacity,
-          rmb_dap: rmb_dap / capacity,
-          rmb_ddp: rmb_ddp / capacity,
-          usd_exw: rmb_exw / (capacity * usd),
-          usd_fob: rmb_fob / (capacity * usd),
-          usd_cif: rmb_cif / (capacity * usd),
-          usd_dap: rmb_dap / (capacity * usd),
-          usd_ddp: rmb_ddp / (capacity * usd),
-          eur_exw: rmb_exw / (capacity * eur),
-          eur_fob: rmb_fob / (capacity * eur),
-          eur_cif: rmb_cif / (capacity * eur),
-          eur_dap: rmb_dap / (capacity * eur),
-          eur_ddp: rmb_ddp / (capacity * eur),
-        })
+      const guide_fee = this.form.guide_fee_switch ? this.form.guide_fee * this.form.guide_days * this.form.exchange_rate_usd : 0 //安装指导
+      const guarantee_and_financial_fees = this.form.guarantee_and_financial_fees_switch ? 1 * this.form.guarantee_and_financial_fees : 0  //保函等财务费用
+      const third_party_audit_fee = this.form.third_party_audit_fee_switch ? 1 * this.form.third_party_audit_fee : 0  //第三方审核费
+      const usd = this.form.exchange_rate_usd * (1 + 0.01 * this.form.exchange_rate_handling_fee)
+      const eur = this.form.exchange_rate_eur * (1 + 0.01 * this.form.exchange_rate_handling_fee)
+      const rmb_exw = (material_cost - tax_refund) / (1 - 0.01 * margin) + guide_fee + guarantee_and_financial_fees + third_party_audit_fee
+      const rmb_fob = rmb_exw + delivery_process_site  //只含生产地运费
+      const rmb_cif = rmb_exw + delivery_process_site + delivery_sea  //含生产地运费，海上运费
+      const rmb_dap = rmb_exw + delivery_process_site + delivery_sea + delivery_project_site //含全部三段运费
+      const rmb_ddp = rmb_dap + tariff  //含税
+      const marginTable = {
+        margin: margin,
+        rmb_exw: rmb_exw / capacity,
+        rmb_fob: rmb_fob / capacity,
+        rmb_cif: rmb_cif / capacity,
+        rmb_dap: rmb_dap / capacity,
+        rmb_ddp: rmb_ddp / capacity,
+        usd_exw: rmb_exw / (capacity * usd),
+        usd_fob: rmb_fob / (capacity * usd),
+        usd_cif: rmb_cif / (capacity * usd),
+        usd_dap: rmb_dap / (capacity * usd),
+        usd_ddp: rmb_ddp / (capacity * usd),
+        eur_exw: rmb_exw / (capacity * eur),
+        eur_fob: rmb_fob / (capacity * eur),
+        eur_cif: rmb_cif / (capacity * eur),
+        eur_dap: rmb_dap / (capacity * eur),
+        eur_ddp: rmb_ddp / (capacity * eur),
       }
-      console.log('总容量', capacity)
-      console.log('材料总价', material_cost)
-      console.log('国内运费', delivery_process_site)
-      console.log('海上运费', delivery_sea)
-      console.log('国外运费', delivery_project_site)
-      console.log('关税', tariff)
-      console.log('退税', tax_refund)
-      console.log('指导费', guide_fee)
-      console.log('财务费', guarantee_and_financial_fees)
-      console.log('第三方审核费', third_party_audit_fee)
-      console.log(marginTable)
+       // console.log('总容量', capacity)
+      // console.log('材料总价', material_cost)
+      // console.log('国内运费', delivery_process_site)
+      // console.log('海上运费', delivery_sea)
+      // console.log('国外运费', delivery_project_site)
+      // console.log('关税', tariff)
+      // console.log('退税', tax_refund)
+      // console.log('指导费', guide_fee)
+      // console.log('财务费', guarantee_and_financial_fees)
+      // console.log('第三方审核费', third_party_audit_fee)
+      // console.log(margin,marginTable)
       return marginTable
-    }
-  },
+    },
 
-  methods: {
     initHeadTitlePosition() {
       const panelW = 420
       const margin = 12
@@ -532,30 +569,138 @@ export default {
       this.headTitlePos.left = Math.min(this.headTitlePos.left, maxL)
       this.headTitlePos.top = Math.min(this.headTitlePos.top, Math.max(m, window.innerHeight - 80))
     },
+    toggleHeadTitleMinimize() {
+      this.headTitleMinimized = !this.headTitleMinimized
+    },
+    /** 弹窗水平位置：表格右缘完全可见且外侧有空位时在表格右侧；否则在屏幕内靠右显示 */
+    calcBasicPriceRowTipPosition(tr) {
+      const tipW = 400
+      const tipMaxH = 420
+      const gap = 10
+      const viewportMargin = 8
+      const trRect = tr.getBoundingClientRect()
+      const tableEl = this.$refs.basicPriceTable && this.$refs.basicPriceTable.$el
+      const tableRect = tableEl ? tableEl.getBoundingClientRect() : null
+      const viewportLeft = viewportMargin
+      const viewportRight = window.innerWidth - viewportMargin
+      let left
+      const tableRightFullyVisible = tableRect && tableRect.right <= viewportRight
+      const roomOutsideTable = tableRect && tableRect.right + gap + tipW <= viewportRight
+      if (tableRect && tableRightFullyVisible && roomOutsideTable) {
+        left = tableRect.right + gap
+      } else if (tableRect && tableRightFullyVisible) {
+        left = tableRect.right - gap - tipW
+        left = Math.max(tableRect.left, left)
+      } else {
+        left = viewportRight - tipW
+      }
+      left = Math.max(viewportLeft, Math.min(left, viewportRight - tipW))
+      let top = trRect.top
+      if (top + tipMaxH > window.innerHeight - viewportMargin) {
+        top = Math.max(viewportMargin, window.innerHeight - tipMaxH - viewportMargin)
+      }
+      return { top, left }
+    },
     /** Element UI 2.x 使用 cell-mouse-enter，无 row-mouse-enter */
     onBasicPriceRowEnter(row, column, cell, event) {
       this.cancelBasicPriceRowTipHide()
       if (!row) return
+      /* 已固定：不随鼠标移入新行更新 Margin / 表格数据 / 行高亮 */
+      if (this.basicPriceRowTip.visible && this.basicPriceRowTip.pinned) {
+        return
+      }
       const el = (event && event.target) || cell
       const tr = el && el.closest ? el.closest('tr') : null
       if (!tr) return
-      const rect = tr.getBoundingClientRect()
-      const tipW = 300
-      const tipMaxH = 420
-      let left = rect.right + 12
-      if (left + tipW > window.innerWidth - 8) {
-        left = Math.max(8, rect.left - tipW - 12)
-      }
-      let top = rect.top
-      if (top + tipMaxH > window.innerHeight - 8) {
-        top = Math.max(8, window.innerHeight - tipMaxH - 8)
-      }
+      const { top, left } = this.calcBasicPriceRowTipPosition(tr)
       this.basicPriceActiveRowKey = row.margin
+      this.openBasicPriceRowTip(row, top, left)
+    },
+    roundBasicPriceMargin(value) {
+      const n = Number(value)
+      if (Number.isNaN(n)) return null
+      return Math.round(n * 100) / 100
+    },
+    openBasicPriceRowTip(tableRow, top, left) {
+      const margin = this.roundBasicPriceMargin(
+        tableRow != null && tableRow.margin != null ? tableRow.margin : 0
+      )
+      if (margin === null) return
+      this.basicPriceRowTipMarginInput = margin
+      const row = this.getBasicPriceByMargin(margin) || tableRow
       this.basicPriceRowTip = {
         visible: true,
         top,
         left,
-        row
+        row,
+        pinned: false
+      }
+    },
+    onBasicPriceRowTipMarginChange(value) {
+      if (value === undefined || value === null) return
+      this.applyBasicPriceRowTipMargin(value)
+    },
+    refreshBasicPriceRowTip() {
+      this.applyBasicPriceRowTipMargin(this.basicPriceRowTipMarginInput)
+    },
+    applyBasicPriceRowTipMargin(value) {
+      if (!this.basicPriceRowTip.visible) return
+      const margin = this.roundBasicPriceMargin(value)
+      if (margin === null || margin < 0 || margin >= 100) return
+      const row = this.getBasicPriceByMargin(margin)
+      if (!row) return
+      this.basicPriceRowTip.row = { ...row, margin }
+      this.basicPriceRowTipMarginInput = margin
+    },
+    onBasicPriceRowTipDragStart(e) {
+      if (!this.basicPriceRowTip.visible) return
+      this.basicPriceRowTipDrag.active = true
+      this.basicPriceRowTipDrag.startX = e.clientX
+      this.basicPriceRowTipDrag.startY = e.clientY
+      this.basicPriceRowTipDrag.originLeft = this.basicPriceRowTip.left
+      this.basicPriceRowTipDrag.originTop = this.basicPriceRowTip.top
+      document.addEventListener('mousemove', this.onBasicPriceRowTipDragMove)
+      document.addEventListener('mouseup', this.onBasicPriceRowTipDragEnd)
+    },
+    onBasicPriceRowTipDragMove(e) {
+      if (!this.basicPriceRowTipDrag.active) return
+      const tipW = 400
+      const tipH = 280
+      const m = 8
+      const dx = e.clientX - this.basicPriceRowTipDrag.startX
+      const dy = e.clientY - this.basicPriceRowTipDrag.startY
+      let left = this.basicPriceRowTipDrag.originLeft + dx
+      let top = this.basicPriceRowTipDrag.originTop + dy
+      const maxL = window.innerWidth - tipW - m
+      const maxT = window.innerHeight - tipH - m
+      left = Math.min(Math.max(m, left), Math.max(m, maxL))
+      top = Math.min(Math.max(m, top), Math.max(m, maxT))
+      this.basicPriceRowTip.left = left
+      this.basicPriceRowTip.top = top
+    },
+    onBasicPriceRowTipDragEnd() {
+      if (!this.basicPriceRowTipDrag.active) return
+      this.basicPriceRowTipDrag.active = false
+      document.removeEventListener('mousemove', this.onBasicPriceRowTipDragMove)
+      document.removeEventListener('mouseup', this.onBasicPriceRowTipDragEnd)
+    },
+    toggleBasicPriceRowTipPin() {
+      if (!this.basicPriceRowTip.visible) return
+      this.basicPriceRowTip.pinned = !this.basicPriceRowTip.pinned
+      this.cancelBasicPriceRowTipHide()
+    },
+    closeBasicPriceRowTip() {
+      this.cancelBasicPriceRowTipHide()
+      this.onBasicPriceRowTipDragEnd()
+      this.basicPriceRowTip.visible = false
+      this.basicPriceRowTip.row = null
+      this.basicPriceRowTip.pinned = false
+      this.basicPriceActiveRowKey = null
+      this.basicPriceRowTipMarginInput = 0
+    },
+    onBasicPriceRowTipMouseLeave() {
+      if (!this.basicPriceRowTip.pinned) {
+        this.scheduleBasicPriceRowTipHide()
       }
     },
     basicPriceRowClassName({ row }) {
@@ -565,15 +710,19 @@ export default {
       return ''
     },
     onBasicPriceRowLeave() {
+      if (this.basicPriceRowTip.pinned) return
       this.scheduleBasicPriceRowTipHide()
     },
     scheduleBasicPriceRowTipHide() {
+      if (this.basicPriceRowTip.pinned) return
       this.cancelBasicPriceRowTipHide()
       this.basicPriceRowTipHideTimer = setTimeout(() => {
         this.basicPriceRowTip.visible = false
         this.basicPriceRowTip.row = null
+        this.basicPriceRowTip.pinned = false
         this.basicPriceActiveRowKey = null
-      }, 120)
+        this.basicPriceRowTipMarginInput = 0
+      }, 240)
     },
     cancelBasicPriceRowTipHide() {
       if (this.basicPriceRowTipHideTimer) {
@@ -581,18 +730,25 @@ export default {
         this.basicPriceRowTipHideTimer = null
       }
     },
-    formatBasicPriceCell(row, col) {
-      if (!row || !col) return ''
-      const cellValue = row[col.prop]
-      if (col.isMargin) {
-        return cellValue
-      }
+    formatBasicPriceTipValue(row, currencyKey, term) {
+      if (!row || !currencyKey || !term) return ''
+      const cellValue = row[`${currencyKey}_${term}`]
       if (typeof cellValue === 'number') {
-        if (cellValue === 0) return ''
-        if (Number.isInteger(cellValue)) return cellValue
-        return cellValue.toFixed(8)
+        return this.formatSignificantDigits(cellValue, 8)
       }
-      return cellValue
+      return cellValue == null ? '' : cellValue
+    },
+    /** 保留指定位有效数字；末位为 0 时保留，便于表格对齐 */
+    formatSignificantDigits(value, digits = 6) {
+      if (typeof value !== 'number' || Number.isNaN(value)) return value == null ? '' : value
+      if (value === 0) return ''
+      const precisionStr = value.toPrecision(digits)
+      if (!/e/i.test(precisionStr)) {
+        return precisionStr
+      }
+      const n = Number(precisionStr)
+      const exp = Math.floor(Math.log10(Math.abs(n)))
+      return n.toFixed(Math.max(0, digits - 1 - exp))
     },
     //初始化要输入内容
     initForm(planResult) {
@@ -883,6 +1039,7 @@ export default {
   },
   beforeDestroy() {
     this.cancelBasicPriceRowTipHide()
+    this.onBasicPriceRowTipDragEnd()
     document.removeEventListener('mousemove', this.onHeadTitleDragMove)
     document.removeEventListener('mouseup', this.onHeadTitleDragEnd)
     window.removeEventListener('resize', this.onHeadTitleViewportResize)
@@ -1145,12 +1302,10 @@ export default {
   z-index: 2000;
   border-radius: 12px;
   overflow: hidden;
-  background: linear-gradient(
-    155deg,
-    rgba(125, 211, 252, 0.5) 0%,
-    rgba(56, 189, 248, 0.5) 45%,
-    rgba(14, 165, 233, 0.5) 100%
-  );
+  background: linear-gradient(155deg,
+      rgba(125, 211, 252, 0.5) 0%,
+      rgba(56, 189, 248, 0.5) 45%,
+      rgba(14, 165, 233, 0.5) 100%);
   border: 1px solid rgba(2, 132, 199, 0.5);
   box-shadow:
     0 12px 40px rgba(14, 165, 233, 0.25),
@@ -1170,18 +1325,20 @@ export default {
     0 0 20px rgba(56, 189, 248, 0.4);
 }
 
+.head-title--minimized .head-title__drag-bar {
+  border-bottom: none;
+}
+
 .head-title__drag-bar {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
   cursor: grab;
-  background: linear-gradient(
-    90deg,
-    rgba(186, 230, 253, 0.5) 0%,
-    rgba(125, 211, 252, 0.5) 50%,
-    rgba(56, 189, 248, 0.5) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(186, 230, 253, 0.5) 0%,
+      rgba(125, 211, 252, 0.5) 50%,
+      rgba(56, 189, 248, 0.5) 100%);
   border-bottom: 1px solid rgba(2, 132, 199, 0.5);
 }
 
@@ -1212,6 +1369,39 @@ export default {
   color: rgba(7, 89, 133, 0.7);
 }
 
+.head-title__summary {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 12px;
+  color: #075985;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.head-title__toggle-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.35);
+  color: #075985;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.head-title__toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.55);
+  color: #0284c7;
+}
+
 .head-title__body {
   padding: 12px 14px 14px;
   user-select: text;
@@ -1234,21 +1424,21 @@ export default {
   position: relative;
 }
 
-.basic-price-table-wrap ::v-deep tr.basic-price-row--active > td {
+.basic-price-table-wrap ::v-deep tr.basic-price-row--active>td {
   background-color: #d9ecff !important;
 }
 
-.basic-price-table-wrap ::v-deep tr.basic-price-row--active:hover > td {
+.basic-price-table-wrap ::v-deep tr.basic-price-row--active:hover>td {
   background-color: #c6e2ff !important;
 }
 
 .basic-price-row-tip {
   position: fixed;
   z-index: 3000;
-  width: 300px;
+  width: 400px;
   max-height: 420px;
   overflow-y: auto;
-  padding: 12px 14px;
+  padding: 10px 12px 12px;
   border-radius: 8px;
   background: #fff;
   border: 1px solid #dcdfe6;
@@ -1256,40 +1446,138 @@ export default {
   pointer-events: auto;
 }
 
-.basic-price-row-tip__title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #409eff;
+.basic-price-row-tip--pinned {
+  border-color: #409eff;
+  box-shadow: 0 8px 28px rgba(64, 158, 255, 0.22);
+}
+
+.basic-price-row-tip--dragging {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  user-select: none;
+}
+
+.basic-price-row-tip__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid #ebeef5;
+  cursor: grab;
+  user-select: none;
 }
 
-.basic-price-row-tip__line {
+.basic-price-row-tip--dragging .basic-price-row-tip__header {
+  cursor: grabbing;
+}
+
+.basic-price-row-tip__title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #409eff;
+  min-width: 0;
+}
+
+.basic-price-row-tip__actions {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  padding: 6px 0;
-  border-bottom: 1px dashed #ebeef5;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.basic-price-row-tip__line:last-child {
-  border-bottom: none;
-}
-
-.basic-price-row-tip__label {
+  align-items: center;
   flex-shrink: 0;
-  color: #909399;
+  gap: 2px;
 }
 
-.basic-price-row-tip__value {
+.basic-price-row-tip__action-btn {
+  padding: 4px !important;
+  min-width: 24px !important;
+  color: #909399 !important;
+}
+
+.basic-price-row-tip__action-btn:hover {
+  color: #409eff !important;
+}
+
+.basic-price-row-tip__action-btn--active {
+  color: #409eff !important;
+}
+
+.basic-price-row-tip__action-btn--close:hover {
+  color: #f56c6c !important;
+}
+
+.basic-price-row-tip__margin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ebeef5;
+}
+
+.basic-price-row-tip__margin-label {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #606266;
+}
+
+.basic-price-row-tip__margin-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.basic-price-row-tip__margin-input ::v-deep .el-input__inner {
+  text-align: left;
+}
+
+.basic-price-row-tip__margin-unit {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #606266;
+}
+
+.basic-price-row-tip__refresh-btn {
+  flex-shrink: 0;
+  padding: 7px 10px !important;
+}
+
+.basic-price-row-tip__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: fixed;
+}
+
+.basic-price-row-tip__table-corner {
+  width: 44px;
+}
+
+.basic-price-row-tip__table-head {
+  padding: 6px 4px;
+  text-align: center;
+  font-weight: 600;
+  color: #606266;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  line-height: 1.3;
+}
+
+.basic-price-row-tip__table-term {
+  padding: 6px 4px;
+  text-align: center;
+  font-weight: 600;
+  color: #409eff;
+  text-transform: uppercase;
+  background: #fafafa;
+  border: 1px solid #ebeef5;
+}
+
+.basic-price-row-tip__table-cell {
+  padding: 6px 4px;
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: #303133;
-  font-weight: 500;
+  border: 1px solid #ebeef5;
   word-break: break-all;
 }
 </style>

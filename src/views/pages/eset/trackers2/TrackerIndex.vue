@@ -5,7 +5,10 @@
     <!--    </div>-->
     <div
       class="head-title"
-      :class="{ 'head-title--dragging': headTitleDrag.active }"
+      :class="{
+        'head-title--dragging': headTitleDrag.active,
+        'head-title--minimized': headTitleMinimized
+      }"
       :style="headTitlePanelStyle"
     >
       <div
@@ -14,10 +17,26 @@
         @mousedown.stop.prevent="onHeadTitleDragStart"
       >
         <span class="head-title__eco-icon" aria-hidden="true" />
-        <span class="head-title__badge">{{ lgc ? '方案摘要' : 'Plan' }}</span>
-        <span class="head-title__hint">{{ lgc ? '拖拽移动' : 'Drag' }}</span>
+        <span
+          v-if="headTitleMinimized"
+          class="head-title__summary"
+          :title="headTitleSummaryText"
+        >{{ headTitleSummaryText }}</span>
+        <template v-else>
+          <span class="head-title__badge">{{ lgc ? '方案摘要' : 'Plan' }}</span>
+          <span class="head-title__hint">{{ lgc ? '拖拽移动' : 'Drag' }}</span>
+        </template>
+        <button
+          type="button"
+          class="head-title__toggle-btn"
+          :title="headTitleMinimized ? (lgc ? '恢复' : 'Restore') : (lgc ? '最小化' : 'Minimize')"
+          @mousedown.stop
+          @click.stop="toggleHeadTitleMinimize"
+        >
+          <i :class="headTitleMinimized ? 'el-icon-full-screen' : 'el-icon-minus'"></i>
+        </button>
       </div>
-      <div class="head-title__body">
+      <div v-show="!headTitleMinimized" class="head-title__body">
         <p>{{ lgc ? '当前用户' : 'USER' }}：{{ name }}</p>
         <p>{{ tsl.project_code[lgc] }}：{{ theProjectAndPlanObj.project_code }}</p>
         <p>{{ tsl.project_name[lgc] }}：{{ theProjectAndPlanObj.project_name }}</p>
@@ -1303,6 +1322,7 @@ export default {
         originLeft: 0,
         originTop: 0,
       },
+      headTitleMinimized: false,
     }
   },
 
@@ -1316,6 +1336,13 @@ export default {
         left: `${this.headTitlePos.left}px`,
         top: `${this.headTitlePos.top}px`,
       }
+    },
+
+    headTitleSummaryText() {
+      const code = this.theProjectAndPlanObj.project_code
+      const name = this.theProjectAndPlanObj.project_name
+      if (code && name) return `${code}|${name}`
+      return code || name || (this.lgc ? '方案摘要' : 'Plan')
     },
 
     newModuleData() {
@@ -1439,6 +1466,9 @@ export default {
       const maxL = Math.max(m, window.innerWidth - panelW - m)
       this.headTitlePos.left = Math.min(this.headTitlePos.left, maxL)
       this.headTitlePos.top = Math.min(this.headTitlePos.top, Math.max(m, window.innerHeight - 80))
+    },
+    toggleHeadTitleMinimize() {
+      this.headTitleMinimized = !this.headTitleMinimized
     },
     handelLanguage(e) {
       //中英文界面切换
@@ -2455,6 +2485,10 @@ th, td {
     0 0 20px rgba(56, 189, 248, 0.4);
 }
 
+.head-title--minimized .head-title__drag-bar {
+  border-bottom: none;
+}
+
 .head-title__drag-bar {
   display: flex;
   align-items: center;
@@ -2495,6 +2529,39 @@ th, td {
 .head-title__hint {
   font-size: 11px;
   color: rgba(7, 89, 133, 0.7);
+}
+
+.head-title__summary {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 12px;
+  color: #075985;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.head-title__toggle-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.35);
+  color: #075985;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.head-title__toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.55);
+  color: #0284c7;
 }
 
 .head-title__body {
