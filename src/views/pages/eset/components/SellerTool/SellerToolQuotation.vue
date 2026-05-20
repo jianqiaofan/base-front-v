@@ -1,13 +1,8 @@
 <template>
   <div class="container-seller-quotation">
     <div class="sq-pdf-toolbar">
-      <el-button
-        type="primary"
-        size="small"
-        icon="el-icon-download"
-        :loading="pdfExporting"
-        @click="exportQuotationPdf"
-      >
+      <el-button type="primary" size="small" icon="el-icon-download" :loading="pdfExporting"
+        @click="exportQuotationPdf">
         导出 PDF（三页合一）
       </el-button>
     </div>
@@ -22,16 +17,24 @@
         <div class="sq-cover-hero">
           <img class="sq-cover-hero-img" :src="assets.hero" alt="" />
           <div class="sq-cover-hero-overlay">
-            <p class="sq-cover-kicker">TRACKER QUOTATION on XX MWp</p>
+            <p class="sq-cover-kicker">
+              <double-click-to-input :obj="q" prop-name="project_name" />
+            </p>
             <p class="sq-cover-sub">at XXX, XXX PROJECT</p>
           </div>
         </div>
 
         <div class="sq-cover-meta">
-          <p>Quotation date: 6-May-2026</p>
-          <p>Quotation valid until: 5-May-2026</p>
           <p>
-            <a class="sq-link" href="mailto:ann.liu@eset.com">ann.liu@eset.com</a>
+            Quotation date:
+            <double-click-to-input :obj="q" prop-name="cover_info.quotation_date" />
+          </p>
+          <p>
+            Quotation valid until:
+            <double-click-to-input :obj="q" prop-name="cover_info.quotation_valid_until" />
+          </p>
+          <p>
+            <double-click-to-input :obj="q" prop-name="seller_mail" />
           </p>
         </div>
 
@@ -40,7 +43,9 @@
         <div class="sq-cover-body">
           <p>
             This proposed technical solution and commercial offer has been prepared for the supply of ESEEK 1P solar
-            tracker with a total peak power of XX MWp, based on XXRp Bifacial module.
+            tracker with a total peak power of
+            <double-click-to-input :obj="q" prop-name="capacity" numeric />
+            MWp, based on XXRp Bifacial module.
           </p>
           <p>
             ESEEK solar tracker adopts Slew drive, which can have flexible design available, good adaptability for
@@ -147,9 +152,14 @@
             <table>
               <tr>
                 <td class="sq-note-label-cell"><span class="note">Note:</span></td>
-                <td><span class="note">The final design is related to the confirmation of module, layout and foundation
-                    design and other parameters, any change in these parameters may lead to a revision of the design and
-                    price.</span>
+                <td class="sq-note-value-cell">
+                  <double-click-to-input
+                    :obj="q"
+                    prop-name="proposed_tracker_solution.notes"
+                    display-class="note"
+                    block
+                    :array-rows="5"
+                  />
                 </td>
               </tr>
             </table>
@@ -174,7 +184,11 @@
             </thead>
             <tbody>
               <tr>
-                <td class="sq-td-center">{{ q.price_and_payment_terms.item }}
+                <td class="sq-td-left">
+                  <span class="note" v-for="(item, index) in q.price_and_payment_terms.item" :key="index">
+                    {{ item }}
+                    <br>
+                  </span>
                 </td>
                 <td class="sq-td-center">{{ q.price_and_payment_terms.design_capacity }}</td>
                 <td class="sq-td-center">{{ q.price_and_payment_terms.description }}</td>
@@ -204,20 +218,15 @@
           <div class="sq-callout">
             <table>
               <tr>
-                <td rowspan="3" class="sq-note-label-cell"><span class="note">Note:</span></td>
-                <td><span class="note">1) Number of exterior and interior tracker subject to the final layout
-                    design;</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <span class="note">2) The length of the post and Embedded Post Depth have been calculated on the basis
-                    of the geotechnical report received, it may changed after POT result and caculation;</span>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <span class="note">3) The Logistics cost in this offer are estimated at the date of the offer. The
-                    final cost of the Logistics will be subjected to the real cost upon contract execution.</span>
+                <td class="sq-note-label-cell"><span class="note">Note:</span></td>
+                <td class="sq-note-value-cell">
+                  <double-click-to-input
+                    :obj="q"
+                    prop-name="price_and_payment_terms.notes"
+                    display-class="note"
+                    block
+                    :array-rows="5"
+                  />
                 </td>
               </tr>
             </table>
@@ -389,9 +398,12 @@
               <tr v-for="item in q.tracker_supply" :key="item.id">
                 <td class="sq-td-index">{{ item.id }}</td>
                 <td>{{ tracker_supply_item[item.id] }}</td>
-                <td class="sq-td-center">{{ item.es | filterChecked }}</td>
-                <td class="sq-td-center">{{ item.cs | filterChecked }}</td>
-                <td class="sq-td-center">{{ item.op | filterChecked }}</td>
+                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 ESET Scope"
+                  @dblclick="setAnnexRowScope(item, 'es')">{{ item.es | filterChecked }}</td>
+                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 Customer Scope"
+                  @dblclick="setAnnexRowScope(item, 'cs')">{{ item.cs | filterChecked }}</td>
+                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 Optional"
+                  @dblclick="setAnnexRowScope(item, 'op')">{{ item.op | filterChecked }}</td>
               </tr>
             </tbody>
           </table>
@@ -412,9 +424,12 @@
               <tr v-for="item in q.Service" :key="item.id">
                 <td class="sq-td-index">{{ item.id }}</td>
                 <td>{{ service_item[item.id] }}</td>
-                <td class="sq-td-center">{{ item.es | filterChecked }}</td>
-                <td class="sq-td-center">{{ item.cs | filterChecked }}</td>
-                <td class="sq-td-center">{{ item.op | filterChecked }}</td>
+                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 ESET Scope"
+                  @dblclick="setAnnexRowScope(item, 'es')">{{ item.es | filterChecked }}</td>
+                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 Customer Scope"
+                  @dblclick="setAnnexRowScope(item, 'cs')">{{ item.cs | filterChecked }}</td>
+                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 Optional"
+                  @dblclick="setAnnexRowScope(item, 'op')">{{ item.op | filterChecked }}</td>
               </tr>
             </tbody>
           </table>
@@ -428,11 +443,15 @@
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { Quotation } from '@/views/pages/eset/trackers2/utils/classQuotation'
+import DoubleClickToInput from './DoubleClickToInput.vue'
 import logoUrl from './fromFig/esetlogo.png'
 import heroUrl from './fromFig/cover_img.jpg'
 
 export default {
   name: 'SellerToolQuotation',
+  components: {
+    DoubleClickToInput,
+  },
   props: {
     /** 由父页面传入时，预览与父表单共用同一 Quotation 实例 */
     quotationParent: {
@@ -442,6 +461,8 @@ export default {
   },
   data() {
     return {
+      inputData:{},
+      quotation:{},
       pdfExporting: false,
       internalQuotation: new Quotation(),
       assets: {
@@ -478,10 +499,17 @@ export default {
   },
   computed: {
     q() {
-      return this.quotationParent != null ? this.quotationParent : this.internalQuotation
+      return this.quotation
     },
   },
   methods: {
+    /** 将本行 √ 移到被双击的 ESET / Customer / Optional 列（互斥） */
+    setAnnexRowScope(row, scope) {
+      if (!row || !['es', 'cs', 'op'].includes(scope)) return
+      this.$set(row, 'es', scope === 'es' ? 1 : 0)
+      this.$set(row, 'cs', scope === 'cs' ? 1 : 0)
+      this.$set(row, 'op', scope === 'op' ? 1 : 0)
+    },
     async exportQuotationPdf() {
       this.pdfExporting = true
       try {
@@ -518,6 +546,123 @@ export default {
         this.pdfExporting = false
       }
     },
+  },
+  mounted() {
+    // if (this.quotationParent) {
+    //   this.quotation = this.quotationParent
+    //   return
+    // }
+    this.quotation =  {
+        seller: '',
+        seller_mail: 'ann.liu@eset.com',
+        plan_code: '',
+        project_code: '',
+        project_name: 'TRACKER QUOTATION FOR 40 MWdc TATA PROJECT',
+        capacity: 40,
+        director_remark: '',
+        cover_info: {
+          quotation_date: '06-May-2026',
+          quotation_valid_until: '26-May-2026',
+        },
+        project_info: {
+          project: 'TATA solar project',
+          customer: 'JET ENERGY',
+          MWDc: 39.515,
+          attention: 'Mr.Tarik',
+          location: `TATA  29° 58' 58.91" N – 8° 12' 51.45" W`,
+          refNo: '',
+        },
+        proposed_tracker_solution: {
+          product: 'Horizontal Single-Axis tracker / 1P Single-Row',
+          drive_system: 'Direct DC motor &  Multipoint Slew Drive',
+          control_communication: 'Network Control Unit (NCU) Control trackers via LoRa wireless protocal (one NCU per weather station). Tracker mounts Tracker Control Unit (TCU) with\n' +
+            'inclinometer and its tracking algorithm',
+          power_source: 'Self Power/PV String DC power, lithium battery backup',
+          design_wind_speed: 'ASCE7-22，47 m/s with 3s gust （MRI=50）',
+          corrosion_protection: 'Atmosphere C4 as per ISO 12944-2\n' +
+            'Torque Tube & Purlin - ZAM 310g/㎡\n' +
+            'Post - HDG 85 μm\n' +
+            'Fasteners - HDG 55 μm',
+          post_type_embedments_depth: 'Drive Post Depth =2000mm;\n' +
+            'General Post Depth =1500mm;\n' +
+            'Final Embedment depth up to POT Result; confirmation',
+          module_power: 'Bifacial 625 Wp (2382*1134*30 mm)',
+          module_no_strings: '28×4，28×2',
+          operation_features: '18 m/s stow position with 3 s gust at 10 m\n' +
+            'Stow position facing the wind at 0~3° \n' +
+            'Snow load of 0 KN/m²\n' +
+            'Earthquake level 0',
+          slope_available: 'N-S : Maximum 15%\n' +
+            'E-W :  Maximum 15%',
+          rotation_features: '±60°  Rotation Range with 1°  Tacking Accuracy\n' +
+            '500 mm minimum module ground clearance',
+          design: '25-year Structural Design life\n' +
+            'Wind velocities and pressures as per Standard Building Code',
+          notes: ['The final design is related to the confirmation of module, layout and foundation design and other parameters.',
+                'any change in these parameters may lead to a revision of the design and price.'
+            ]
+        },
+        price_and_payment_terms: {
+          item:['ESEEK 1P Solar Tracker', '1V112,4-strings Exterior:Edge:Int=11.7%:19.5%:59.3%','1V56,2-strings, Exterior:Edge:Int=1.1%:8.4%:0%', '1V112,4-strings Exterior:Edge:Int=11.7%:19.5%:59.3%','1V56,2-strings, Exterior:Edge:Int=1.1%:8.4%:0%'],
+          design_capacity: 39.52,
+          description: 'Ramming Pile',
+          FOB: '0.0475',
+          CIF: '0.0520',
+          CIF_total: 0,
+          on_site_engineer: 75,
+          on_site_engineer_included: true,
+          notes: [
+            'Number of exterior and interior tracker subject to the final layout design;',
+            'The length of the post and Embedded Post Depth have been calculated on the basis of the geotechnical report received, it may changed after POT result and caculation;',
+            'The Logistics cost in this offer are estimated at the date of the offer. The final cost of the Logistics will be subjected to the real cost upon contract execution.',
+          ],
+        },
+        delivery_warranty: {
+          incoterms_2010: 'FOB /CIF Casablanca',
+          port_of_departure: 'QINGDAO',
+          no_of_containers: '64  units 40HQ',
+          first_delivery_lead_time: 'By negotiation',
+          estimated_delivery_rate: 'By negotiation',
+          steel_structural_components: '10 years',
+          electro_mechanical_components: '7 years',
+          galvanizing_protection: '10 years',
+        },
+        construction_spare_parts: {
+          fasteners_spares: { percentage: 2, price: true, },
+          up_structure_damper: { percentage: 0.2, price: true, },
+          control_box_tcu: { percentage: 0.5, price: true, },
+          post_others: { percentage: 0.5, price: true, },
+          slew_drive_motor: { percentage: 0.2, price: true, },
+          communication_box_ncu: { percentage: 5, price: true, },
+        },
+        //Item内容不写在tracker_supply中，而是写在模板上，可减少数据库保存时冗余
+        //为了减少保存到数据库中数据量，将Item内容不写在数据中，而是在模板上处理，
+        // 同时，将eset_scope简写为es,customer_scope简写为cs,optional简写为op,true简写为1,false简写为0
+        tracker_supply: [
+          { id: 1, es: 1, cs: 0, op: 0 },
+          { id: 2, es: 1, cs: 0, op: 0 },
+          { id: 3, es: 1, cs: 0, op: 0 },
+          { id: 4, es: 1, cs: 0, op: 0 },
+          { id: 5, es: 1, cs: 0, op: 0 },
+          { id: 6, es: 1, cs: 0, op: 0 },
+          { id: 7, es: 0, cs: 1, op: 0 },
+          { id: 8, es: 0, cs: 1, op: 0 }
+        ],
+        Service: [
+          { id: 1, es: 1, cs: 0, op: 0 },
+          { id: 2, es: 0, cs: 0, op: 1 },
+          { id: 3, es: 1, cs: 0, op: 0 },
+          { id: 4, es: 0, cs: 0, op: 1 },
+          { id: 5, es: 0, cs: 0, op: 1 },
+          { id: 6, es: 0, cs: 0, op: 1 },
+          { id: 7, es: 0, cs: 1, op: 0 },
+          { id: 8, es: 0, cs: 0, op: 1 },
+          { id: 9, es: 0, cs: 0, op: 1 },
+          { id: 10, es: 0, cs: 1, op: 0 },
+          { id: 11, es: 0, cs: 1, op: 0 },
+        ],
+        service_extra_onsite_engineer_price: 230,
+      }
   },
   filters: {
     filterChecked(value) {
@@ -556,7 +701,7 @@ $sq-frame-divider: #c5cbd6;
   justify-content: flex-end;
 }
 
-.seller-quotation-frame + .seller-quotation-frame {
+.seller-quotation-frame+.seller-quotation-frame {
   margin-top: 24px;
   border-top: 1px solid $sq-frame-divider;
 }
@@ -752,9 +897,21 @@ $sq-frame-divider: #c5cbd6;
   background-color: $sq-callout-bg;
 }
 
+.sq-callout table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
 .sq-note-label-cell {
   width: 100px;
   text-align: center;
+}
+
+.sq-note-value-cell {
+  width: auto;
+  min-width: 0;
+  vertical-align: top;
 }
 
 .sq-td-center {
@@ -770,11 +927,11 @@ $sq-frame-divider: #c5cbd6;
 }
 
 .sq-price-head--item {
-  width: 240px;
+  width: 280px;
 }
 
 .sq-price-head--std {
-  width: 180px;
+  width: 140px;
 }
 
 .sq-spacer--y6 {
@@ -784,27 +941,35 @@ $sq-frame-divider: #c5cbd6;
 .sq-td--w40 {
   width: 40px;
 }
+
 .sq-td--w100 {
   width: 100px;
 }
+
 .sq-td--w200 {
   width: 200px;
 }
+
 .sq-td--w240 {
   width: 240px;
 }
+
 .sq-td--w300 {
   width: 300px;
 }
+
 .sq-td--w400 {
   width: 400px;
 }
+
 .sq-td--w500 {
   width: 500px;
 }
+
 .sq-td--w600 {
   width: 600px;
 }
+
 .sq-td--w700 {
   width: 700px;
 }
@@ -830,6 +995,18 @@ $sq-frame-divider: #c5cbd6;
 
 .sq-td-index {
   font-weight: bold;
+}
+
+.sq-annex-scope-cell {
+  cursor: pointer;
+  user-select: none;
+  text-align: center !important;
+  min-width: 48px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: #ecf5ff;
+  }
 }
 
 .seller-quotation-frame--3 thead {

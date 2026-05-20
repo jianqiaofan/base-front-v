@@ -1107,6 +1107,7 @@ export default {
         ],
         power_supply_options: [
           { text: '小组件供电', value: '小组件供电' },
+          { text: '双组件供电', value: '双组件供电' },
           { text: '组串供电', value: '组串供电' },
           { text: '交流供电', value: '交流供电' }
         ],

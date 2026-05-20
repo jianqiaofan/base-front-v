@@ -1,7 +1,7 @@
 <template>
   <div class="tb-seller-tool">
     <el-button type="primary" icon="el-icon-tickets" @click="quotationDrawerVisible = true">
-      打开报价单
+      报价单预览
     </el-button>
 
     <div class="form-div">

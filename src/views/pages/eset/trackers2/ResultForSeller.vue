@@ -87,9 +87,9 @@
           <el-table :data="materialFee" border style="width: 1200px">
             <el-table-column type="index" label="序号" width="50" :index="indexMethod"></el-table-column>
             <el-table-column prop="name" label="材料名称" width="100"></el-table-column>
-            <el-table-column prop="totalPrice" label="总价" width="200" :formatter="formatNumber2"></el-table-column>
+            <el-table-column prop="totalPrice" label="总价(RMB 元)" width="200" :formatter="formatNumber2"></el-table-column>
             <el-table-column prop="pricePerWatt" label="瓦单价" width="200" :formatter="formatNumber6"></el-table-column>
-            <el-table-column prop="totalWeight" label="总重" width="200" :formatter="formatNumber6"></el-table-column>
+            <el-table-column prop="totalWeight" label="总重(kg)" width="200" :formatter="formatNumber2"></el-table-column>
             <el-table-column prop="tonPerMw" label="兆瓦吨重" width="200" :formatter="formatNumber6"></el-table-column>
             <el-table-column prop="processingSite" label="生产地" width="100"></el-table-column>
           </el-table>
@@ -220,12 +220,12 @@
                 placeholder="财务费等" style="width:130px; margin-left: 10px" size="mini"></el-input>
               <span v-show="form.guarantee_and_financial_fees_switch" class="other-fee-form__unit">(¥)</span>
             </el-form-item>
-            <el-form-item label="第三方审核费">
-              <el-switch v-model="form.third_party_audit_fee_switch" active-text="有" inactive-text="无">
+            <el-form-item label="其它附加费用">
+              <el-switch v-model="form.other_additional_fees_switch" active-text="有" inactive-text="无">
               </el-switch>
-              <el-input v-show="form.third_party_audit_fee_switch" v-model="form.third_party_audit_fee"
-                placeholder="第三方审核费" style="width:130px; margin-left: 10px" size="mini"></el-input>
-              <span v-show="form.third_party_audit_fee_switch" class="other-fee-form__unit">(¥)</span>
+              <el-input v-show="form.other_additional_fees_switch" v-model="form.other_additional_fees"
+                placeholder="其它附加费用" style="width:130px; margin-left: 10px" size="mini"></el-input>
+              <span v-show="form.other_additional_fees_switch" class="other-fee-form__unit">(¥)</span>
             </el-form-item>
           </el-form>
         </div>
@@ -323,6 +323,14 @@
                   title="刷新计算"
                   @click.stop="refreshBasicPriceRowTip"
                 >刷新</el-button>
+                <el-button
+                  type="success"
+                  size="mini"
+                  icon="el-icon-document"
+                  class="basic-price-row-tip__quotation-btn"
+                  title="生成报价单"
+                  @click.stop="openQuotationReportDrawer"
+                >生成报价单</el-button>
               </div>
             </div>
           </transition>
@@ -344,6 +352,19 @@
 
     </el-collapse>
 
+    <el-drawer
+      title="报价单"
+      :visible.sync="quotationReportDrawerVisible"
+      direction="btt"
+      size="90%"
+      append-to-body
+      :destroy-on-close="false"
+      custom-class="result-for-seller__quotation-drawer"
+    >
+      <div class="result-for-seller__quotation-scroll">
+        <seller-tool-quotation :quotation-parent="quotation" />
+      </div>
+    </el-drawer>
 
   </div>
 
@@ -352,9 +373,14 @@
 <script>
 import { getToken } from '@/utils/auth'
 import { mapGetters } from 'vuex'
+import { Quotation } from '@/views/pages/eset/trackers2/utils/classQuotation'
+import SellerToolQuotation from '@/views/pages/eset/components/SellerTool/SellerToolQuotation.vue'
 
 export default {
   name: 'ResultForSeller',
+  components: {
+    SellerToolQuotation,
+  },
   data() {
     return {
       activeNames: ['3','4'],
@@ -391,7 +417,9 @@ export default {
       },
       basicPriceRowTipHideTimer: null,
       basicPriceActiveRowKey: null,
-      basicPriceRowTipMarginInput: 0
+      basicPriceRowTipMarginInput: 0,
+      quotationReportDrawerVisible: false,
+      quotation: new Quotation(),
     }
   },
   computed: {
@@ -484,10 +512,10 @@ export default {
       const tax_refund = siteCosts.reduce((a, b) => a + 1 * b.tax_refund, 0)  //出口退税
       const guide_fee = this.form.guide_fee_switch ? this.form.guide_fee * this.form.guide_days * this.form.exchange_rate_usd : 0 //安装指导
       const guarantee_and_financial_fees = this.form.guarantee_and_financial_fees_switch ? 1 * this.form.guarantee_and_financial_fees : 0  //保函等财务费用
-      const third_party_audit_fee = this.form.third_party_audit_fee_switch ? 1 * this.form.third_party_audit_fee : 0  //第三方审核费
+      const other_additional_fees = this.form.other_additional_fees_switch ? 1 * this.form.other_additional_fees : 0  //第三方审核费
       const usd = this.form.exchange_rate_usd * (1 + 0.01 * this.form.exchange_rate_handling_fee)
       const eur = this.form.exchange_rate_eur * (1 + 0.01 * this.form.exchange_rate_handling_fee)
-      const rmb_exw = (material_cost - tax_refund) / (1 - 0.01 * margin) + guide_fee + guarantee_and_financial_fees + third_party_audit_fee
+      const rmb_exw = (material_cost - tax_refund) / (1 - 0.01 * margin) + guide_fee + guarantee_and_financial_fees + other_additional_fees
       const rmb_fob = rmb_exw + delivery_process_site  //只含生产地运费
       const rmb_cif = rmb_exw + delivery_process_site + delivery_sea  //含生产地运费，海上运费
       const rmb_dap = rmb_exw + delivery_process_site + delivery_sea + delivery_project_site //含全部三段运费
@@ -519,7 +547,7 @@ export default {
       // console.log('退税', tax_refund)
       // console.log('指导费', guide_fee)
       // console.log('财务费', guarantee_and_financial_fees)
-      // console.log('第三方审核费', third_party_audit_fee)
+      // console.log('其它附加费用', other_additional_fees)
       // console.log(margin,marginTable)
       return marginTable
     },
@@ -643,6 +671,18 @@ export default {
     refreshBasicPriceRowTip() {
       this.applyBasicPriceRowTipMargin(this.basicPriceRowTipMarginInput)
     },
+    openQuotationReportDrawer() {
+      const q = this.quotation
+      const proj = this.theProjectAndPlanObj
+      if (proj.project_code) q.project_code = proj.project_code
+      if (proj.project_name) {
+        q.project_name = proj.project_name
+        if (q.project_info) q.project_info.project = proj.project_name
+      }
+      if (this.projectAndPlan.plan_code) q.plan_code = this.projectAndPlan.plan_code
+      if (proj.seller) q.seller = proj.seller
+      this.quotationReportDrawerVisible = true
+    },
     applyBasicPriceRowTipMargin(value) {
       if (!this.basicPriceRowTip.visible) return
       const margin = this.roundBasicPriceMargin(value)
@@ -760,10 +800,10 @@ export default {
           guide_fee: 200,
           guide_days: 25,
           guarantee_and_financial_fees: 0,
-          third_party_audit_fee: 0,
+          other_additional_fees: 0,
           guide_fee_switch: true,
           guarantee_and_financial_fees_switch: true,
-          third_party_audit_fee_switch: true,
+          other_additional_fees_switch: true,
           process_site: []
         }
         return
@@ -775,10 +815,10 @@ export default {
         guide_fee: 200,
         guide_days: this.getDayOfService(planResult.planCapacity),
         guarantee_and_financial_fees: 0,
-        third_party_audit_fee: 0,
+        other_additional_fees: 0,
         guide_fee_switch: true,
         guarantee_and_financial_fees_switch: true,
-        third_party_audit_fee_switch: true,
+        other_additional_fees_switch: true,
         process_site: this.getProcessSiteInfo(planResult)
       }
     },
@@ -1536,7 +1576,8 @@ export default {
   color: #606266;
 }
 
-.basic-price-row-tip__refresh-btn {
+.basic-price-row-tip__refresh-btn,
+.basic-price-row-tip__quotation-btn {
   flex-shrink: 0;
   padding: 7px 10px !important;
 }
@@ -1579,5 +1620,23 @@ export default {
   color: #303133;
   border: 1px solid #ebeef5;
   word-break: break-all;
+}
+</style>
+
+<style lang="scss">
+.result-for-seller__quotation-drawer .el-drawer__body {
+  padding: 0;
+  overflow: hidden;
+  height: calc(100% - 55px);
+  box-sizing: border-box;
+}
+
+.result-for-seller__quotation-scroll {
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding: 0 16px 16px;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 }
 </style>

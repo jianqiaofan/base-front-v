@@ -243,6 +243,123 @@
       </div>
     </div>
     <el-divider></el-divider>
+
+    <div class="structure-working">
+      <h2 @click="showHistoryStructure = !showHistoryStructure">已完项目查询(上部结构)</h2>
+      <div class="container" style="overflow-x:auto" v-show="showHistoryStructure">
+        <el-collapse v-model="activeNames" @change="handleChange">
+          <el-collapse-item v-for="p in projectHistoryListStructure" :title="p.code + ` `+ p.name " :key="p.id"
+                             @click.native="fetchHistoryPlanData(p.code)"
+          >
+            <div>项目编号：
+              <el-button @click="projectDetails(p.code)" type="text" size="small">{{ p.code }}</el-button>
+            </div>
+            <div>所在地：{{ p.site }}</div>
+            <div>支架类别：{{ p.category }}</div>
+            <div>结构工程师：{{ p.designer }}</div>
+            <div>岩土工程师：{{ p.geotechnical }}</div>
+            <div>销售经理：{{ p.seller }}</div>
+            <div>校对人员：{{ p.checker }}</div>
+            <div>技术总负责：{{ p.technical_director }}</div>
+            <div>项目创建时间：{{ p.create_time|filterLocalTime }}</div>
+            <div>要求完成时间：{{ p.required_completion_time }}</div>
+            <div>销售经理提资链接：<a style="color:#20a0ff" :href="p.data_link" target="_blank"
+            >{{ p.data_link|filterLink(36) }}</a></div>
+            <div>当前设计版本：{{ p.design_version|filterDesignVersion }}</div>
+            <div>
+              <el-button type="primary" size="mini" @click="showDialogCreatPlan(p)">创建新方案</el-button>
+            </div>
+            <el-table :data="historyPlanDataStructure.filter(data => data.project_code === p.code)" border
+                      style="width: 100%"
+            >
+              <el-table-column prop="plan_description" label="方案名称" width="200" sortable></el-table-column>
+              <el-table-column prop="project_design_version" label="变更号" width="100"></el-table-column>
+              <el-table-column prop="category" label="结构类型" width="140"></el-table-column>
+              <el-table-column prop="plan_status" label="状态" width="140">
+                <template slot-scope="scope">
+                  {{ scope.row.plan_status|filterPlanStatus }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="struChecker" label="结构校核人" width="120">
+                <template slot-scope="scope">
+                  <el-button @click="showDialogSubmitCheckStru(scope.row)" type="text" size="small">
+                    {{ scope.row.stru_checker|filterChecker }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="stru_result_data_link" label="上部结构成果资料" width="80"
+                               :formatter="formatDataLink"
+              ></el-table-column>
+              <el-table-column prop="stru_check_status" label="结构校核状态" width="100" :formatter="formatCheckStatusStru"
+              ></el-table-column>
+
+              <el-table-column prop="geotechnical" label="岩土工程师" width="140">
+                <template slot-scope="scope">
+                  <p v-show="['0'].includes(scope.row.geo_check_status)">待指派</p>
+                  <p v-show="['1','2','3'].includes(scope.row.geo_check_status)">{{ scope.row.geotechnical }}</p>
+                  <el-button v-show="!['0','1','2','3'].includes(scope.row.geo_check_status)" @click="showDialogAssignGeo(scope.row)" type="text" size="small">
+                    点击申请
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="data_link_to_geotechnical" label="岩土提资资料" width="80"
+                               :formatter="formatDataLink"
+              >
+              </el-table-column>
+              <el-table-column prop="geo_required_completion_time" label="岩土要求完成时间" width="160" sortable
+              ></el-table-column>
+              <el-table-column prop="geo_check_status" label="岩土进展" width="110" :formatter="formatCheckStatusStru"
+              ></el-table-column>
+              <el-table-column prop="geo_result_data_link" label="岩土成果" width="180"
+                               :formatter="formatDataLink"
+              >
+                <template slot-scope="scope">
+                  <a style="color:#20a0ff" :href="scope.row.geo_result_data_link" target="_blank"
+                  >{{ scope.row.geo_result_data_link|filterLink(30) }}</a>
+                </template>
+              </el-table-column>
+              <el-table-column prop="create_time" label="方案创建日期" width="160" sortable>
+                <template slot-scope="scope">{{ scope.row.create_time | filterLocalTime }}</template>
+              </el-table-column>
+              <el-table-column prop="update_time" label="最后保存时间" width="200" sortable>
+                <template slot-scope="scope">
+                  <template v-for="ago in [getUpdateTimeAgoParts(scope.row.update_time)]">
+                    <span
+                      v-if="ago.text"
+                      :key="(scope.row.id || scope.row.plan_code) + '-' + ago.text + ago.color"
+                      :style="{ color: ago.color }"
+                    >{{ ago.text }}</span>
+                  </template>
+                </template>
+              </el-table-column>
+              <el-table-column label="工具" width="150">
+                <template slot-scope="scope">
+                  <button v-if="scope.row.category==='1P Tracker' || scope.row.category==='2P Tracker'"
+                          @click="showTrackerBom(scope.row,p,true)"
+                  >跟踪支架BOM
+                  </button>
+                  <button v-if="scope.row.category !=='1P Tracker' && scope.row.category !=='2P Tracker'"
+                          @click="showOtherBom(scope.row.plan_code,p)"
+                  >导入BOM表
+                  </button>
+                </template>
+              </el-table-column>
+              <el-table-column fixed="left" label="操作" width="150">
+                <template slot-scope="scope">
+                  <el-button @click="showDialogUpdatePlan(scope.row)" type="text" size="small">修改</el-button>
+                  <el-button @click="removePlanById(scope.row)" type="text" size="small">删除</el-button>
+                  <el-button v-if="scope.row.plan_status === '0'" @click="showDialogSubmitApprovePlan(scope.row)"
+                             type="text" size="small"
+                  >提交审批
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-collapse-item>
+        </el-collapse>
+      </div>
+    </div>
+    <el-divider></el-divider>
     <!--我的校对方案(岩土基础)-->
 <!--    <div class="geotechnical-checking">-->
 <!--      <h2 @click="showItemGeotechnicalCheck = !showItemGeotechnicalCheck">我的校对方案(岩土基础)</h2>-->
@@ -561,6 +678,7 @@ export default {
       activeNames: ['1'],
       projectList: [],  //我正在参与的全部项目（包含正在上部设计，基础设计和校对的）
       projectListStructure: [],  //projectList的子集，我正在设计的结构项目
+      projectHistoryListStructure: [],  //全部designer完成的结构项目查询的结构项目
       projectListGeotechnical: [],  //projectList的子集，我正在设计的岩土项目
       projectListChecker: [],  //projectList的子集，我正在校对的项目
 
@@ -590,6 +708,7 @@ export default {
       myPlanListGeotechnical: [],// 我的方案-基础岩土
       myCheckPlanListStructure: [],// 我校核的方案-上部结构
       myCheckPlanListGeotechnical: [],// 我校核的方案-基础岩土
+      historyPlanDataStructure: [],
 
       //对话框相关
       approveTextarea: '',
@@ -601,6 +720,7 @@ export default {
       showItemGeotechnical: false,
       showItemStructureCheck: false,
       showItemGeotechnicalCheck: false,
+      showHistoryStructure: false,
 
       saveable:false  //方案是否能够被修改
 
@@ -746,6 +866,38 @@ export default {
           console.error('Error:', error)
         })
     },
+        //获取我正在参与的项目信息
+    fetchHistoryProjectData() {
+      this.listLoading = true
+      fetch(process.env.VUE_APP_BASE_API + '/api/getEngineerHistoryProject', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: this.name
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.projectHistoryListStructure = r.data
+          console.log('projectHistoryListStructure:', this.projectHistoryListStructure);
+          this.listLoading = false
+          return r.data
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+        })
+    },
 
     //获取全部项目工程师
     getAllTechnicalEngineers() {
@@ -801,6 +953,35 @@ export default {
           this.myPlanListGeotechnical = r.data.filter(p => p.geotechnical === this.name && p.design_version === p.project_design_version)
           this.myCheckPlanListStructure = r.data.filter(p => p.stru_checker === this.name && p.stru_check_status === '1' && p.design_version === p.project_design_version)
           // this.myCheckPlanListGeotechnical = r.data.filter(p => p.geo_checker === this.name && p.geo_check_status === '1' && p.design_version === p.project_design_version)
+        })
+    },
+
+    fetchHistoryPlanData(planCode) {
+      console.log('planCode:', planCode);
+      fetch(process.env.VUE_APP_BASE_API + '/api/getPlanByCodes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: planCode
+      })
+        .then(response => {
+          if (response.ok) {
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          r.data.forEach(p => {
+              this.historyPlanDataStructure.push(p)
+          })
+          //this.historyPlanDataStructure去重
+          this.historyPlanDataStructure = this.historyPlanDataStructure.filter((item, index, self) =>
+            index === self.findIndex((t) => t.plan_code === item.plan_code)
+          ) 
         })
     },
 
@@ -1366,6 +1547,7 @@ export default {
   mounted() {
     this.fetchProjectData()
     this.getAllTechnicalEngineers()
+    this.fetchHistoryProjectData()
   }
 }
 </script>

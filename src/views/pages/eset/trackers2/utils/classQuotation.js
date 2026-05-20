@@ -60,6 +60,11 @@ Exterior:Edge:Int=1.1%:8.4%:0%`,
         CIF_total:0,
         on_site_engineer:75,
         on_site_engineer_included:true,
+        notes: [
+          'Number of exterior and interior tracker subject to the final layout design;',
+          'The length of the post and Embedded Post Depth have been calculated on the basis of the geotechnical report received, it may changed after POT result and caculation;',
+          'The Logistics cost in this offer are estimated at the date of the offer. The final cost of the Logistics will be subjected to the real cost upon contract execution.',
+        ],
     }
     this.delivery_warranty = {
       incoterms_2010:'FOB /CIF Casablanca',

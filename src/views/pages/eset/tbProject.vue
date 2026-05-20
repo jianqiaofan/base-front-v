@@ -165,7 +165,7 @@
           <el-row :gutter="0">
             <el-select v-model="theEditDesigner" multiple placeholder="请选择结构设计师" filterable size="mini">
               <el-option
-                v-for="item in mydata.select_option.designer"
+                v-for="item in designer_option"
                 :key="item.value"
                 :label="item.label"
                 :value="item.value"
@@ -178,7 +178,7 @@
           <el-row :gutter="0">
             <el-select v-model="theEditGeotechnical" multiple placeholder="请选择岩土工程师" filterable size="mini">
               <el-option
-                v-for="item in mydata.select_option.designer"
+                v-for="item in designer_option"
                 :key="item.value"
                 :label="item.label"
                 :value="item.value"
@@ -283,7 +283,8 @@ export default {
       showDetailProjectCode: '',//显示项目详情时的项目号
       drawer: false,
       direction: 'ltr',
-      drawerContext: 'assignment' //当为projectList 时，打开项目详情
+      drawerContext: 'assignment', //当为projectList 时，打开项目详情
+      designer_option: []  //designer选项卡
     }
   },
   computed: {
@@ -297,6 +298,7 @@ export default {
   },
   // 生命周期函数：内存准备完毕，页面渲染成功
   mounted() {
+    this.getAllTechnicalEngineers();
   },
   methods: {
     getRowKeys(row) {
@@ -481,7 +483,38 @@ export default {
       } else {
         return cellValue
       }
-    }
+    },
+        //获取全部项目工程师
+     getAllTechnicalEngineers() {
+      let engineers = []
+      fetch(process.env.VUE_APP_BASE_API + '/api/getAllTechnicalEngineers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        },
+        body: {}
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        })
+        .then(r => {
+          this.designer_option = []
+          r.data.forEach(item => this.designer_option.push({ value: item.fullname, label: item.fullname }))
+        })
+        .catch(error => {
+          // 捕捉fetch过程中或处理响应时的错误
+          console.error('Error:', error)
+          return []
+        })
+    },
 
   },
   filters: {}
