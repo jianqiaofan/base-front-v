@@ -4,7 +4,7 @@
       'head-title--dragging': headTitleDrag.active,
       'head-title--minimized': headTitleMinimized
     }" :style="headTitlePanelStyle">
-      <div class="head-title__drag-bar" title="拖动移动面板" @mousedown.stop.prevent="onHeadTitleDragStart">
+      <div class="head-title__drag-bar" :title="tr('拖动移动面板', 'Drag to move')" @mousedown.stop.prevent="onHeadTitleDragStart">
         <span class="head-title__eco-icon" aria-hidden="true" />
         <span v-if="headTitleMinimized" class="head-title__summary" :title="headTitleSummaryText">{{
           headTitleSummaryText }}</span>
@@ -12,18 +12,30 @@
           <span class="head-title__badge">Plan</span>
           <span class="head-title__hint">Drag</span>
         </template>
-        <button type="button" class="head-title__toggle-btn" :title="headTitleMinimized ? '恢复' : '最小化'" @mousedown.stop
+        <el-button
+          class="head-title__lang-btn"
+          type="text"
+          size="mini"
+          :title="tr('切换到英文', 'Switch to Chinese')"
+          @mousedown.stop
+          @click.stop="toggleLanguage"
+        >{{ lgc ? 'EN' : '中文' }}</el-button>
+        <button
+          type="button"
+          class="head-title__toggle-btn"
+          :title="headTitleMinimized ? tr('恢复', 'Restore') : tr('最小化', 'Minimize')"
+          @mousedown.stop
           @click.stop="toggleHeadTitleMinimize">
           <i :class="headTitleMinimized ? 'el-icon-full-screen' : 'el-icon-minus'"></i>
         </button>
       </div>
       <div v-show="!headTitleMinimized" class="head-title__body">
-        <p>当前用户：{{ name }}</p>
-        <p>项目编号：{{ theProjectAndPlanObj.project_code }}</p>
-        <p>项目名称：{{ theProjectAndPlanObj.project_name }}</p>
-        <p>方案名称：{{ theProjectAndPlanObj.plan_description }}</p>
-        <p>销售经理：{{ theProjectAndPlanObj.seller }}</p>
-        <p>设计师：{{ theProjectAndPlanObj.designer }}</p>
+        <p>{{ tr('当前用户', 'User') }}：{{ name }}</p>
+        <p>{{ tr('项目编号', 'Project Code') }}：{{ theProjectAndPlanObj.project_code }}</p>
+        <p>{{ tr('项目名称', 'Project Name') }}：{{ theProjectAndPlanObj.project_name }}</p>
+        <p>{{ tr('方案名称', 'Plan Name') }}：{{ theProjectAndPlanObj.plan_description }}</p>
+        <p>{{ tr('销售经理', 'Sales Manager') }}：{{ theProjectAndPlanObj.seller }}</p>
+        <p>{{ tr('设计师', 'Designer') }}：{{ theProjectAndPlanObj.designer }}</p>
       </div>
     </div>
     <el-collapse v-model="activeNames" @change="handleChange">
@@ -31,68 +43,68 @@
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
-            <span style="margin-left: 8px; font-weight: bold;">项目成本价 Project Cost Price</span>
+            <span style="margin-left: 8px; font-weight: bold;">{{ tr('项目成本价', 'Project Cost Price') }}</span>
           </div>
         </template>
         <div class="summary-plan-table" style="margin-left: 20px">
           <!--    {{planResult}}-->
           <el-table :data="planResult.summaryData || []" border stripe class="summary-plan-table__grid"
             style="width: 1800px" :row-class-name="summaryPlanRowClassName" :cell-class-name="summaryPlanCellClassName">
-            <el-table-column type="index" label="序号" width="50" align="center" header-align="center"
+            <el-table-column type="index" :label="tr('序号', 'No.')" width="50" align="center" header-align="center"
               :index="summaryPlanIndexMethod"></el-table-column>
-            <el-table-column prop="trackBrifeName" label="型号" width="180" show-overflow-tooltip></el-table-column>
-            <el-table-column prop="trackerNum" label="数量(套)" width="80" align="center"
+            <el-table-column prop="trackBrifeName" :label="tr('型号', 'Model')" width="180" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="trackerNum" :label="tr('数量(套)', 'Qty (sets)')" width="80" align="center"
               header-align="center"></el-table-column>
-            <el-table-column prop="trackerNumRatio" label="占比%" width="70" align="right" header-align="center"
+            <el-table-column prop="trackerNumRatio" :label="tr('占比%', 'Share %')" width="70" align="right" header-align="center"
               :formatter="formatNumber2"></el-table-column>
-            <el-table-column prop="pvCapacity" label="组件容量(W)" width="120" align="center" header-align="center"
+            <el-table-column prop="pvCapacity" :label="tr('组件容量(W)', 'Module Power (W)')" width="120" align="center" header-align="center"
               :formatter="formatNumber2"></el-table-column>
-            <el-table-column prop="solarList" label="组件排布" width="120" align="center" header-align="center"
+            <el-table-column prop="solarList" :label="tr('组件排布', 'Module Layout')" width="120" align="center" header-align="center"
               :formatter="formatNumber2"></el-table-column>
-            <el-table-column prop="trackerWeightSpare" label="单套重量(kg)" width="120" align="right" header-align="center"
+            <el-table-column prop="trackerWeightSpare" :label="tr('单套重量(kg)', 'Weight / set (kg)')" width="120" align="right" header-align="center"
               :formatter="formatNumber3"></el-table-column>
-            <el-table-column prop="trackerCapacity" label="容量(kW)" width="80" align="right" header-align="center"
+            <el-table-column prop="trackerCapacity" :label="tr('容量(kW)', 'Capacity (kW)')" width="80" align="right" header-align="center"
               :formatter="formatNumber3"></el-table-column>
-            <el-table-column prop="trackerTotalWeightSpare" label="总重量(kg)" width="120" align="right"
+            <el-table-column prop="trackerTotalWeightSpare" :label="tr('总重量(kg)', 'Total Weight (kg)')" width="120" align="right"
               header-align="center" :formatter="formatNumber3"></el-table-column>
             <el-table-column prop="trackerTotalWeightOnlyStructureSpare" width="120" align="right" header-align="center"
               :formatter="formatNumber3">
               <template #header>
                 <div class="summary-plan-table__header-multiline">
-                  <div>总重量</div>
-                  <div class="summary-plan-table__header-sub">(不含机械电气)</div>
+                  <div>{{ tr('总重量', 'Total Weight') }}</div>
+                  <div class="summary-plan-table__header-sub">{{ tr('(不含机械电气)', '(excl. M&E)') }}</div>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="trackerTotalCapacity" label="总容量(kW)" width="120" align="right" header-align="center"
+            <el-table-column prop="trackerTotalCapacity" :label="tr('总容量(kW)', 'Total Capacity (kW)')" width="120" align="right" header-align="center"
               :formatter="formatNumber3"></el-table-column>
-            <el-table-column prop="trackerPriceSpare" label="单套价格" width="120" align="right" header-align="center"
+            <el-table-column prop="trackerPriceSpare" :label="tr('单套价格', 'Price / set')" width="120" align="right" header-align="center"
               :formatter="formatNumber2"></el-table-column>
-            <el-table-column prop="trackerTotalPriceSpare" label="总价格" width="150" align="right" header-align="center"
+            <el-table-column prop="trackerTotalPriceSpare" :label="tr('总价格', 'Total Price')" width="150" align="right" header-align="center"
               :formatter="formatNumber2"></el-table-column>
-            <el-table-column prop="pricePerWattSpare" label="瓦单价" width="110" align="right" header-align="center"
+            <el-table-column prop="pricePerWattSpare" :label="tr('瓦单价', 'Price / W')" width="110" align="right" header-align="center"
               :formatter="formatNumber6"></el-table-column>
           </el-table>
-          <p style="color: red">* 单套重量、总重量、单套价格、总价格、瓦单价均是含有备品备件的数据</p>
+          <p style="color: red">{{ tr('* 单套重量、总重量、单套价格、总价格、瓦单价均是含有备品备件的数据', '* Weight/price metrics include spare parts') }}</p>
         </div>
       </el-collapse-item>
       <el-collapse-item name="2">
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
-            <span style="margin-left: 8px; font-weight: bold;">材料费 Material Cost</span>
+            <span style="margin-left: 8px; font-weight: bold;">{{ tr('材料费', 'Material Cost') }}</span>
           </div>
         </template>
         <div>
           <el-table :data="materialFee" border style="width: 1200px">
-            <el-table-column type="index" label="序号" width="50" :index="indexMethod"></el-table-column>
-            <el-table-column prop="name" label="材料名称" width="100"></el-table-column>
-            <el-table-column prop="totalPrice" label="总价(RMB 元)" width="200"
+            <el-table-column type="index" :label="tr('序号', 'No.')" width="50" :index="indexMethod"></el-table-column>
+            <el-table-column prop="name" :label="tr('材料名称', 'Material')" width="100"></el-table-column>
+            <el-table-column prop="totalPrice" :label="tr('总价(RMB 元)', 'Total (RMB)')" width="200"
               :formatter="formatNumber2"></el-table-column>
-            <el-table-column prop="pricePerWatt" label="瓦单价" width="200" :formatter="formatNumber6"></el-table-column>
-            <el-table-column prop="totalWeight" label="总重(kg)" width="200" :formatter="formatNumber2"></el-table-column>
-            <el-table-column prop="tonPerMw" label="兆瓦吨重" width="200" :formatter="formatNumber6"></el-table-column>
-            <el-table-column prop="processingSite" label="生产地" width="100"></el-table-column>
+            <el-table-column prop="pricePerWatt" :label="tr('瓦单价', 'Price / W')" width="200" :formatter="formatNumber6"></el-table-column>
+            <el-table-column prop="totalWeight" :label="tr('总重(kg)', 'Total Weight (kg)')" width="200" :formatter="formatNumber2"></el-table-column>
+            <el-table-column prop="tonPerMw" :label="tr('兆瓦吨重', 't/MW')" width="200" :formatter="formatNumber6"></el-table-column>
+            <el-table-column prop="processingSite" :label="tr('生产地', 'Origin')" width="100"></el-table-column>
           </el-table>
         </div>
       </el-collapse-item>
@@ -100,158 +112,164 @@
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
-            <span style="margin-left: 8px; font-weight: bold;">非材料费(运费、服务费等) Non-material costs(transportation costs,
-              service costs, etc.)</span>
+            <span style="margin-left: 8px; font-weight: bold;">{{ tr('非材料费(运费、服务费等)', 'Non-material costs (freight, services, etc.)') }}</span>
           </div>
         </template>
-        <h3>汇率换算</h3>
+        <h3>{{ tr('汇率换算', 'FX conversion') }}</h3>
         <div class="fee-div">
           <el-form :inline="true" class="demo-form-inline">
-            <el-form-item label="美元汇率$">
-              <el-input v-model="form.exchange_rate_usd" placeholder="美元汇率" style="width:72px;" size="mini"></el-input>
+            <el-form-item :label="tr('美元汇率$', 'USD rate $')">
+              <el-input v-model="form.exchange_rate_usd" :placeholder="tr('美元汇率', 'USD rate')" style="width:72px;" size="mini"></el-input>
             </el-form-item>
-            <el-form-item label="欧元汇率€" style="margin-left: 10px">
-              <el-input v-model="form.exchange_rate_eur" placeholder="欧元汇率" style="width:72px;" size="mini"></el-input>
+            <el-form-item :label="tr('欧元汇率€', 'EUR rate €')" style="margin-left: 10px">
+              <el-input v-model="form.exchange_rate_eur" :placeholder="tr('欧元汇率', 'EUR rate')" style="width:72px;" size="mini"></el-input>
             </el-form-item>
-            <el-form-item label="兑换手续费" style="margin-left: 10px">
-              <el-input v-model="form.exchange_rate_handling_fee" placeholder="兑换手续费" style="width:60px;"
+            <el-form-item :label="tr('兑换手续费', 'FX handling fee')" style="margin-left: 10px">
+              <el-input v-model="form.exchange_rate_handling_fee" :placeholder="tr('兑换手续费', 'Handling fee')" style="width:60px;"
                 size="mini"></el-input>
             </el-form-item>
             <el-form-item label="%"></el-form-item>
             <el-form-item>
               <span class="summary-exchange-btns">
                 <el-button type="success" size="mini" @click="getExchangeRate"
-                  :loading="exchangeRateLoading">刷新汇率</el-button>
-                <el-button type="primary" size="mini" @click="openBocExchangePage">外汇牌价</el-button>
+                  :loading="exchangeRateLoading">{{ tr('刷新汇率', 'Refresh') }}</el-button>
+                <el-button type="primary" size="mini" @click="openBocExchangePage">{{ tr('外汇牌价', 'BOC FX rates') }}</el-button>
               </span>
             </el-form-item>
           </el-form>
-          <p class="exchange-note">* 输入币种说明：¥-人民币,$-美元,€-欧元</p>
+          <p class="exchange-note">{{ tr('* 输入币种说明：¥-人民币,$-美元,€-欧元', '* Currency: ¥=RMB, $=USD, €=EUR') }}</p>
         </div>
 
-        <h3>运费、税费等与生产地有关的费用</h3>
+        <h3>{{ tr('运费、税费等与生产地有关的费用', 'Freight / tax by origin') }}</h3>
         <div class="fee-div" v-for="psd in (form.process_site || [])" :key="psd.location || psd.id">
           <el-form :inline="true" class="demo-form-inline">
             <p class="prosite">
               <span>
-                <i class="el-icon-location-outline"></i> 生产地：
+                <i class="el-icon-location-outline"></i> {{ tr('生产地', 'Origin') }}：
                 <span class="location-tag">{{ psd.location }}</span>
               </span>
               <span>
-                <i class="el-icon-money"></i> 总货值：
-                <span class="value">{{ psd.goodTotalPrice }}</span> 元(¥)
+                <i class="el-icon-money"></i> {{ tr('总货值', 'Goods value') }}：
+                <span class="value">{{ psd.goodTotalPrice }}</span> {{ tr('元(¥)', 'RMB (¥)') }}
               </span>
               <span>
-                <i class="el-icon-ship"></i> 总货重：
-                <span class="value">{{ psd.goodTotalWeight / 1000 }}</span> 吨
+                <i class="el-icon-ship"></i> {{ tr('总货重', 'Total weight') }}：
+                <span class="value">{{ psd.goodTotalWeight / 1000 }}</span> {{ tr('吨', 't') }}
               </span>
             </p>
           </el-form>
 
           <el-form :inline="true" class="demo-form-inline">
-            <el-form-item label="生产工厂到港口运费单价">
-              <el-select v-model="psd.method" placeholder="请选择" style="width:100px;" size="mini">
-                <el-option label="散装" value="bulk"></el-option>
-                <el-option label="整运" value="container"></el-option>
+            <el-form-item :label="tr('生产工厂到港口运费单价', 'Factory → port freight unit price')">
+              <el-select v-model="psd.method" :placeholder="tr('请选择', 'Select')" style="width:100px;" size="mini">
+                <el-option :label="tr('散装', 'Bulk')" value="bulk"></el-option>
+                <el-option :label="tr('整运', 'Container')" value="container"></el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="" style="margin-left: 0px">
-              <el-input v-show="psd.method === 'bulk'" v-model="psd.bulk_unit_price" placeholder="每吨运费单价"
+              <el-input v-show="psd.method === 'bulk'" v-model="psd.bulk_unit_price" :placeholder="tr('每吨运费单价', 'Unit price per ton')"
                 style="width:80px;" size="mini"></el-input>
-              <el-input v-show="psd.method === 'container'" v-model="psd.container_unit_price" placeholder="每集装箱运费单价"
+              <el-input v-show="psd.method === 'container'" v-model="psd.container_unit_price"
+                :placeholder="tr('每集装箱运费单价', 'Unit price per container')"
                 style="width:80px;" size="mini"></el-input>
             </el-form-item>
-            <el-form-item v-show="psd.method === 'container'" label="(¥/集装箱)"></el-form-item>
-            <el-form-item v-show="psd.method === 'bulk'" label="(¥/吨)"></el-form-item>
-            <el-form-item label="集装箱限重">
+            <el-form-item
+              v-show="psd.method === 'container'"
+              :label="tr('(¥/集装箱)', '(¥/Container)')"
+            ></el-form-item>
+            <el-form-item
+              v-show="psd.method === 'bulk'"
+              :label="tr('(¥/吨)', '(¥/Ton)')"
+            ></el-form-item>
+            <el-form-item :label="tr('集装箱限重', 'Container max weight')">
               <el-input v-model="psd.container_limit_weight" placeholder="" style="width:60px;" size="mini"></el-input>
             </el-form-item>
-            <el-form-item label="吨"></el-form-item>
+            <el-form-item :label="tr('吨', 'Ton')"></el-form-item>
           </el-form>
 
           <el-form :inline="true" class="demo-form-inline">
-            <el-form-item label="生产国出口海运费">
-              <el-input v-model="psd.unit_ocean_freight" placeholder="每箱运费(按美元计价)" style="width:100px"
+            <el-form-item :label="tr('生产国出口海运费', 'Ocean freight (export)')">
+              <el-input v-model="psd.unit_ocean_freight" :placeholder="tr('每箱运费(按美元计价)', 'Per container (USD)')" style="width:100px"
                 size="mini"></el-input>
-              <el-form-item label="($/箱)" style="margin-left: 6px"></el-form-item>
+              <el-form-item :label="tr('($/箱)', '($/Container)')" style="margin-left: 6px"></el-form-item>
             </el-form-item>
-            <el-form-item label="目地国港杂+派送费单价">
-              <el-input v-model="psd.import_port_fees" placeholder="目地国港杂+派送费" style="width:100px"
+            <el-form-item :label="tr('目地国港杂+派送费单价', 'Port fees + delivery (import)')">
+              <el-input v-model="psd.import_port_fees" :placeholder="tr('目地国港杂+派送费', 'Port fees + delivery')" style="width:100px"
                 size="mini"></el-input>
-              <el-form-item label="($/吨)" style="margin-left: 6px"></el-form-item>
+              <el-form-item :label="tr('($/吨)', '($/Ton)')" style="margin-left: 6px"></el-form-item>
             </el-form-item>
           </el-form>
 
           <el-form :inline="true" class="demo-form-inline">
-            <el-form-item label="项目所在国关税">
-              <el-switch v-model="psd.switch_tariff" active-text="有关税" inactive-text="无关税">
+            <el-form-item :label="tr('项目所在国关税', 'Import tariff')">
+              <el-switch v-model="psd.switch_tariff" :active-text="tr('有关税', 'Enabled')" :inactive-text="tr('无关税', 'Disabled')">
               </el-switch>
-              <el-form-item v-show="psd.switch_tariff" label="关税税率" style="margin-left: 18px"></el-form-item>
-              <el-input v-show="psd.switch_tariff" v-model="psd.tariff_rate" placeholder="关税税率" style="width:100px"
+              <el-form-item v-show="psd.switch_tariff" :label="tr('关税税率', 'Tariff rate')" style="margin-left: 18px"></el-form-item>
+              <el-input v-show="psd.switch_tariff" v-model="psd.tariff_rate" :placeholder="tr('关税税率', 'Tariff rate')" style="width:100px"
                 size="mini"></el-input>
               <el-form-item v-show="psd.switch_tariff" label="(%)" style="margin-left: 6px"></el-form-item>
             </el-form-item>
           </el-form>
           <el-form :inline="true" class="demo-form-inline">
-            <el-form-item label="生产国出口退税">
-              <el-switch v-model="psd.switch_tax_refund" active-text="有退税" inactive-text="无退税">
+            <el-form-item :label="tr('生产国出口退税', 'Export tax refund')">
+              <el-switch v-model="psd.switch_tax_refund" :active-text="tr('有退税', 'Enabled')" :inactive-text="tr('无退税', 'Disabled')">
               </el-switch>
-              <el-form-item v-show="psd.switch_tax_refund" label="退税税率" style="margin-left: 18px"></el-form-item>
-              <el-input v-show="psd.switch_tax_refund" v-model="psd.tax_refund_rate" placeholder="退税税率"
+              <el-form-item v-show="psd.switch_tax_refund" :label="tr('退税税率', 'Refund rate')" style="margin-left: 18px"></el-form-item>
+              <el-input v-show="psd.switch_tax_refund" v-model="psd.tax_refund_rate" :placeholder="tr('退税税率', 'Refund rate')"
                 style="width:100px" size="mini"></el-input>
               <el-form-item v-show="psd.switch_tax_refund" label="(%)" style="margin-left: 6px"></el-form-item>
             </el-form-item>
           </el-form>
 
         </div>
-        <h3>其它费用</h3>
+        <h3>{{ tr('其它费用', 'Other costs') }}</h3>
         <div class="fee-div fee-div--has-save-btn">
           <el-form class="other-fee-form" label-width="120px">
-            <el-form-item label="安装指导费">
-              <el-switch v-model="form.guide_fee_switch" active-text="有" inactive-text="无">
+            <el-form-item :label="tr('安装指导费', 'Installation guidance')">
+              <el-switch v-model="form.guide_fee_switch" :active-text="tr('有', 'Yes')" :inactive-text="tr('无', 'No')">
               </el-switch>
-              <el-input v-show="form.guide_fee_switch" v-model="form.guide_fee" placeholder="安装指导费"
+              <el-input v-show="form.guide_fee_switch" v-model="form.guide_fee" :placeholder="tr('安装指导费', 'Daily fee')"
                 style="width:80px; margin-left: 10px" size="mini"></el-input>
               <span v-show="form.guide_fee_switch" class="other-fee-form__unit">($/day)</span>
-              <el-input v-show="form.guide_fee_switch" v-model="form.guide_days" placeholder="安装指导费"
+              <el-input v-show="form.guide_fee_switch" v-model="form.guide_days" :placeholder="tr('服务天数', 'Days')"
                 style="width:80px; margin-left: 10px" size="mini"></el-input>
-              <span v-show="form.guide_fee_switch" class="other-fee-form__hint">天</span>
-              <span v-show="form.guide_fee_switch" class="other-fee-form__hint">建议服务天数:{{
+              <span v-show="form.guide_fee_switch" class="other-fee-form__hint">{{ tr('天', 'days') }}</span>
+              <span v-show="form.guide_fee_switch" class="other-fee-form__hint">{{ tr('建议服务天数:', 'Suggested days:') }}{{
                 getDayOfService(planResult.planCapacity) }} </span>
             </el-form-item>
-            <el-form-item label="保函和财务费">
-              <el-switch v-model="form.guarantee_and_financial_fees_switch" active-text="有" inactive-text="无">
+            <el-form-item :label="tr('保函和财务费', 'Guarantee & finance fees')">
+              <el-switch v-model="form.guarantee_and_financial_fees_switch" :active-text="tr('有', 'Yes')" :inactive-text="tr('无', 'No')">
               </el-switch>
               <el-input v-show="form.guarantee_and_financial_fees_switch" v-model="form.guarantee_and_financial_fees"
-                placeholder="财务费等" style="width:130px; margin-left: 10px" size="mini"></el-input>
+                :placeholder="tr('财务费等', 'Amount')" style="width:130px; margin-left: 10px" size="mini"></el-input>
               <span v-show="form.guarantee_and_financial_fees_switch" class="other-fee-form__unit">(¥)</span>
             </el-form-item>
-            <el-form-item label="其它附加费用">
-              <el-switch v-model="form.other_additional_fees_switch" active-text="有" inactive-text="无">
+            <el-form-item :label="tr('其它附加费用', 'Additional fees')">
+              <el-switch v-model="form.other_additional_fees_switch" :active-text="tr('有', 'Yes')" :inactive-text="tr('无', 'No')">
               </el-switch>
               <el-input v-show="form.other_additional_fees_switch" v-model="form.other_additional_fees"
-                placeholder="其它附加费用" style="width:130px; margin-left: 10px" size="mini"></el-input>
+                :placeholder="tr('其它附加费用', 'Amount')" style="width:130px; margin-left: 10px" size="mini"></el-input>
               <span v-show="form.other_additional_fees_switch" class="other-fee-form__unit">(¥)</span>
             </el-form-item>
           </el-form>
-          <el-button class="fee-div__save-btn" type="primary" size="mini" @click="saveFormInfo">保存输入信息</el-button>
+          <el-button class="fee-div__save-btn" type="primary" size="mini" @click="saveFormInfo">{{ tr('保存输入信息', 'Save') }}</el-button>
         </div>
       </el-collapse-item>
       <el-collapse-item name="4">
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
-            <span style="margin-left: 8px; font-weight: bold;">报价价格(按瓦单价) Quotation price (per watt)</span>
+            <span style="margin-left: 8px; font-weight: bold;">{{ tr('报价价格(按瓦单价)', 'Quotation price (per watt)') }}</span>
           </div>
         </template>
-        <h3>毛利率与运输条款</h3>
+        <h3>{{ tr('毛利率与运输条款', 'Margin & trade terms') }}</h3>
         <div class="basic-price-table-wrap" style="width: 1600px">
           <div class="basic-price-filters">
-            <span class="basic-price-filters__label">货币</span>
+            <span class="basic-price-filters__label">{{ tr('货币', 'Currency') }}</span>
             <el-select
               v-model="basicPriceCurrencyFilter"
               multiple
-              placeholder="请选择货币"
+              :placeholder="tr('请选择货币', 'Select currency')"
               size="small"
               class="basic-price-filters__select"
               @change="onBasicPriceCurrencyFilterChange"
@@ -259,15 +277,15 @@
               <el-option
                 v-for="item in basicPriceCurrencyOptions"
                 :key="item"
-                :label="item"
+                :label="currencyOptionLabel(item)"
                 :value="item"
               />
             </el-select>
-            <span class="basic-price-filters__label">贸易术语</span>
+            <span class="basic-price-filters__label">{{ tr('贸易术语', 'Incoterm') }}</span>
             <el-select
               v-model="basicPriceTermFilter"
               multiple
-              placeholder="请选择贸易术语"
+              :placeholder="tr('请选择贸易术语', 'Select term')"
               size="small"
               class="basic-price-filters__select"
               @change="onBasicPriceTermFilterChange"
@@ -275,7 +293,7 @@
               <el-option
                 v-for="item in basicPriceTermOptions"
                 :key="item"
-                :label="item"
+                :label="termOptionLabel(item)"
                 :value="item"
               />
             </el-select>
@@ -299,7 +317,7 @@
               'basic-price-row-tip--dragging': basicPriceRowTipDrag.active
             }" :style="basicPriceRowTipStyle" @mouseenter="cancelBasicPriceRowTipHide"
               @mouseleave="onBasicPriceRowTipMouseLeave">
-              <div class="basic-price-row-tip__header" title="拖拽移动"
+              <div class="basic-price-row-tip__header" :title="tr('拖拽移动', 'Drag to move')"
                 @mousedown.stop.prevent="onBasicPriceRowTipDragStart">
                 <div class="basic-price-row-tip__title">
                   Margin {{ basicPriceRowTip.row && basicPriceRowTip.row.margin }}%
@@ -307,12 +325,12 @@
                 <div class="basic-price-row-tip__actions">
                   <el-button type="text" size="mini" class="basic-price-row-tip__action-btn"
                     :class="{ 'basic-price-row-tip__action-btn--active': basicPriceRowTip.pinned }"
-                    :title="basicPriceRowTip.pinned ? '取消固定' : '固定（失焦不关闭，Margin 不变）'"
+                    :title="basicPriceRowTip.pinned ? tr('取消固定', 'Unpin') : tr('固定（失焦不关闭，Margin 不变）', 'Pin (keep open)')"
                     @click.stop="toggleBasicPriceRowTipPin">
                     <i :class="basicPriceRowTip.pinned ? 'el-icon-unlock' : 'el-icon-lock'"></i>
                   </el-button>
                   <el-button type="text" size="mini"
-                    class="basic-price-row-tip__action-btn basic-price-row-tip__action-btn--close" title="关闭"
+                    class="basic-price-row-tip__action-btn basic-price-row-tip__action-btn--close" :title="tr('关闭', 'Close')"
                     @click.stop="closeBasicPriceRowTip">
                     <i class="el-icon-close"></i>
                   </el-button>
@@ -322,51 +340,46 @@
                 <thead>
                   <tr>
                     <th class="basic-price-row-tip__table-corner"></th>
-                    <th v-for="cur in basicPriceTipCurrencies" :key="cur.key" class="basic-price-row-tip__table-head">{{
+                    <th v-for="cur in basicPriceTipCurrenciesDisplay" :key="cur.key" class="basic-price-row-tip__table-head">{{
                       cur.label }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="term in basicPriceTipTerms" :key="term">
                     <th class="basic-price-row-tip__table-term">{{ term }}</th>
-                    <td v-for="cur in basicPriceTipCurrencies" :key="cur.key + term"
+                    <td v-for="cur in basicPriceTipCurrenciesDisplay" :key="cur.key + term"
                       class="basic-price-row-tip__table-cell">{{ formatBasicPriceTipValue(basicPriceRowTip.row, cur.key,
                         term) }}</td>
                   </tr>
                 </tbody>
               </table>
               <div class="basic-price-row-tip__margin" @mousedown.stop @click.stop>
-                <span class="basic-price-row-tip__margin-label">利润率</span>
+                <span class="basic-price-row-tip__margin-label">{{ tr('利润率', 'Margin') }}</span>
                 <el-input-number v-model="basicPriceRowTipMarginInput" size="mini" :step="0.01" :precision="2" :min="0"
                   :max="99.99" controls-position="right" class="basic-price-row-tip__margin-input"
                   @change="onBasicPriceRowTipMarginChange" />
                 <span class="basic-price-row-tip__margin-unit">%</span>
                 <el-button type="primary" size="mini" icon="el-icon-refresh" class="basic-price-row-tip__refresh-btn"
-                  title="刷新计算" @click.stop="refreshBasicPriceRowTip">刷新</el-button>
+                  :title="tr('刷新计算', 'Recalculate')" @click.stop="refreshBasicPriceRowTip">{{ tr('刷新', 'Refresh') }}</el-button>
                 <el-button type="success" size="mini" icon="el-icon-document" class="basic-price-row-tip__quotation-btn"
-                  title="生成报价单" @click.stop="openQuotationReportDrawer">生成报价单</el-button>
+                  :title="tr('生成报价单', 'Generate quotation')" @click.stop="openQuotationReportDrawer">{{ tr('生成报价单', 'Generate quotation') }}</el-button>
               </div>
             </div>
           </transition>
         </div>
         <div>
-          <p>贸易术语名称解释：</p>
-          <p>EXW：(Ex
-            Works),代表“离厂价”或“工厂交货”。卖方只需在工厂（或其他指定地点）准备好货物，并提供必要的出口文件，如商业发票、装箱单等。而买方则需负责从卖方指定的地点自行提货，并承担此后的所有运输、清关、税费和保险等费用。
-          </p>
-          <p>FOB:(Free On
-            Board),“离岸价”或“船上交货价”，指卖方在约定装运港将货物装上买方指定船只并完成出口手续，买方负责租船订舱及货物装船后的运输与保险。</p>
-          <p>CIF:(Cost,Insurance and Freight),成本加保险费加运费。</p>
-          <p>DAP:(delivered at
-            place),目的地交货，是指卖方已经用运输工具把货物运送到达买方指定的目的地后，将装在运输工具上的货物（不用卸载）交由买方处置。</p>
-          <p>DDP:(Delivered Duty
-            Paid),需要由卖方办理进口清关手续的术语，卖方需承担将货物运至指定目的地的一切风险和费用，包括在目的地应交纳的关税、税款及其他费用。</p>
+          <p>{{ tr('贸易术语名称解释：', 'Incoterms explained:') }}</p>
+          <p>{{ tr('EXW：(Ex Works),代表“离厂价”或“工厂交货”。卖方只需在工厂（或其他指定地点）准备好货物，并提供必要的出口文件，如商业发票、装箱单等。而买方则需负责从卖方指定的地点自行提货，并承担此后的所有运输、清关、税费和保险等费用。', 'EXW (Ex Works): The seller makes the goods available at its premises (or another named place). The buyer bears all costs and risks involved in taking the goods from there, including transport, customs, taxes, and insurance.') }}</p>
+          <p>{{ tr('FOB：(Free On Board),“离岸价”或“船上交货价”，指卖方在约定装运港将货物装上买方指定船只并完成出口手续，买方负责租船订舱及货物装船后的运输与保险。', 'FOB (Free On Board): The seller delivers the goods on board the vessel nominated by the buyer at the named port of shipment and clears the goods for export. The buyer arranges main carriage and insurance after loading.') }}</p>
+          <p>{{ tr('CIF：(Cost, Insurance and Freight),成本加保险费加运费。', 'CIF (Cost, Insurance and Freight): The seller pays costs, insurance, and freight to bring the goods to the named port of destination.') }}</p>
+          <p>{{ tr('DAP：(Delivered At Place),目的地交货，是指卖方已经用运输工具把货物运送到达买方指定的目的地后，将装在运输工具上的货物（不用卸载）交由买方处置。', 'DAP (Delivered At Place): The seller delivers when the goods are placed at the disposal of the buyer on the arriving means of transport, ready for unloading at the named place of destination.') }}</p>
+          <p>{{ tr('DDP：(Delivered Duty Paid),需要由卖方办理进口清关手续的术语，卖方需承担将货物运至指定目的地的一切风险和费用，包括在目的地应交纳的关税、税款及其他费用。', 'DDP (Delivered Duty Paid): The seller bears all costs and risks to deliver the goods to the named place in the country of import, including import clearance and payment of duties and taxes.') }}</p>
         </div>
       </el-collapse-item>
 
     </el-collapse>
 
-    <el-drawer title="报价单" :visible.sync="quotationReportDrawerVisible" direction="btt" size="90%" append-to-body
+    <el-drawer :title="tr('报价单', 'Quotation')" :visible.sync="quotationReportDrawerVisible" direction="btt" size="90%" append-to-body
       :destroy-on-close="false" custom-class="result-for-seller__quotation-drawer">
       <div class="result-for-seller__quotation-scroll">
         <seller-tool-quotation :quotation-parent="quotation" />
@@ -391,10 +404,11 @@ export default {
   },
   data() {
     return {
+      lgc: true, // true=中文, false=English
       activeNames: ['3', '4'],
       form: {},
       exchangeRateLoading: false,
-      headTitlePos: { left: 0, top: 600 },
+      headTitlePos: { left: 0, top: 60 },
       headTitleDrag: {
         active: false,
         startX: 0,
@@ -438,6 +452,13 @@ export default {
   },
   computed: {
     ...mapGetters(['name']),
+    basicPriceTipCurrenciesDisplay() {
+      return [
+        { key: 'rmb', label: this.tr('RMB(人民币)', 'RMB') },
+        { key: 'usd', label: this.tr('USD(美元)', 'USD') },
+        { key: 'eur', label: this.tr('EUR(欧元)', 'EUR') }
+      ]
+    },
     basicPriceRowTipStyle() {
       return {
         top: `${this.basicPriceRowTip.top}px`,
@@ -505,9 +526,21 @@ export default {
       return 80 + this.basicPriceVisibleColumns.length * 90
     }
   },
-
-
   methods: {
+    tr(cn, en) {
+      return this.lgc ? cn : en
+    },
+    toggleLanguage() {
+      this.lgc = !this.lgc
+    },
+    currencyOptionLabel(val) {
+      const map = { 全部: 'All', 美元: 'USD', 欧元: 'EUR', 人民币: 'RMB' }
+      return this.lgc ? val : (map[val] || val)
+    },
+    termOptionLabel(val) {
+      if (this.lgc) return val
+      return val === '全部' ? 'All' : val
+    },
     /**
      * 「全部」与其它项互斥：仅「全部」= 不过滤；选其它项则去掉「全部」；空选则回到「全部」
      */
@@ -567,18 +600,18 @@ export default {
           if (response.ok) {
             return response.json()
           }
-          throw new Error('服务器响应异常')
+          throw new Error(this.tr('服务器响应异常', 'Server response error'))
         })
         .then(r => {
           if (r && r.code === 200) {
-            this.$message.success('保存成功')
+            this.$message.success(this.tr('保存成功', 'Saved'))
           } else {
-            this.$message.error((r && r.message) || '保存失败')
+            this.$message.error((r && r.message) || this.tr('保存失败', 'Save failed'))
           }
         })
         .catch(error => {
           console.error('Error:', error)
-          this.$message.error(error.message || '保存失败，请稍后重试')
+          this.$message.error(error.message || this.tr('保存失败，请稍后重试', 'Save failed. Please try again later.'))
         })
     },
 
@@ -718,7 +751,7 @@ export default {
       const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
       this.headTitlePos = {
         left: Math.max(margin, vw - panelW - margin),
-        top: 600
+        top: 60
       }
     },
     onHeadTitleDragStart(e) {
@@ -986,40 +1019,47 @@ export default {
         })
         mf = [
           {
-            name: '立柱',
+            name: this.tr('立柱', 'Post'),
             totalPrice: prt.reduce((a, b) => a + b.trackTotalPostPriceSpare, 0),
             totalWeight: prt.reduce((a, b) => a + b.trackTotalPostWeightSpare, 0),
             pricePerWatt: prt.reduce((a, b) => a + b.trackTotalPostPriceSpare, 0) / totalCapacity,
             tonPerMw: 1000 * prt.reduce((a, b) => a + b.trackTotalPostWeightSpare, 0) / totalCapacity,
-            processingSite: plan.process_site.post
+            processingSite: this.processingSiteText(plan.process_site.post)
           },
           {
-            name: '主梁',
+            name: this.tr('主梁', 'Torque Tube'),
             totalPrice: prt.reduce((a, b) => a + b.trackTotalBeamPriceSpare, 0),
             totalWeight: prt.reduce((a, b) => a + b.trackTotalBeamWeightSpare, 0),
             pricePerWatt: prt.reduce((a, b) => a + b.trackTotalBeamPriceSpare, 0) / totalCapacity,
             tonPerMw: 1000 * prt.reduce((a, b) => a + b.trackTotalBeamWeightSpare, 0) / totalCapacity,
-            processingSite: plan.process_site.beam
+            processingSite: this.processingSiteText(plan.process_site.beam)
           },
           {
-            name: '檩条',
+            name: this.tr('檩条', 'Purlin'),
             totalPrice: prt.reduce((a, b) => a + b.trackTotalPurlinPriceSpare, 0),
             totalWeight: prt.reduce((a, b) => a + b.trackTotalPurlinWeightSpare, 0),
             pricePerWatt: prt.reduce((a, b) => a + b.trackTotalPurlinPriceSpare, 0) / totalCapacity,
             tonPerMw: 1000 * prt.reduce((a, b) => a + b.trackTotalPurlinWeightSpare, 0) / totalCapacity,
-            processingSite: plan.process_site.purlin
+            processingSite: this.processingSiteText(plan.process_site.purlin)
           },
           {
-            name: '其它',
+            name: 'Other',
             totalPrice: prt.reduce((a, b) => a + b.trackTotalOtherPriceSpare, 0) + plan.weatherStationTotalPrice,
             totalWeight: prt.reduce((a, b) => a + b.trackTotalOtherWeightSpare, 0),
             pricePerWatt: prt.reduce((a, b) => a + b.trackTotalOtherPriceSpare, 0) / totalCapacity,
             tonPerMw: 1000 * prt.reduce((a, b) => a + b.trackTotalOtherWeightSpare, 0) / totalCapacity,
-            processingSite: '国内'
+            processingSite: this.tr('国内', 'Domestic')
           }
         ]
       }
       return mf
+    },
+    //生产地翻译
+    processingSiteText(site) {
+      if (site === '国内') return this.tr('国内', 'Domestic')
+      else if (site === '沙特') return this.tr('沙特', 'Saudi')
+      else if (site === '土耳其') return this.tr('土耳其', 'Turkey')
+      else return this.tr(site, site)
     },
     //计算标准服务天数
     getDayOfService(totalCapacity) {
