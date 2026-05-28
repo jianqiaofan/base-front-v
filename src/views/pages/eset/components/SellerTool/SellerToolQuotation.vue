@@ -1,9 +1,13 @@
 <template>
   <div class="container-seller-quotation">
     <div class="sq-pdf-toolbar">
+      <el-button size="small" :type="editable ? 'warning' : 'success'"
+        :icon="editable ? 'el-icon-lock' : 'el-icon-edit'" @click="toggleQuotationEditable">
+        {{ editable ? 'Locked (Preview Only)' : 'Editable' }}
+      </el-button>
       <el-button type="primary" size="small" icon="el-icon-download" :loading="pdfExporting"
         @click="exportQuotationPdf">
-        导出 PDF（三页合一）
+        Output PDF
       </el-button>
     </div>
     <!-- quotation 1: cover（文案与缩略图一致；图片来自 q.fig 内嵌资源） -->
@@ -18,23 +22,25 @@
           <img class="sq-cover-hero-img" :src="assets.hero" alt="" />
           <div class="sq-cover-hero-overlay">
             <p class="sq-cover-kicker">
-              <double-click-to-input :obj="q" prop-name="project_name" />
+              QUOTATION SHEET on <double-click-to-input :obj="q" :editable="editable" prop-name="client_capacity" />
+              TRACKER
             </p>
-            <p class="sq-cover-sub">at XXX, XXX PROJECT</p>
+            <p class="sq-cover-sub">at <double-click-to-input :obj="q" :editable="editable" prop-name="project_name" />
+              PROJECT</p>
           </div>
         </div>
 
         <div class="sq-cover-meta">
           <p>
             Quotation date:
-            <double-click-to-input :obj="q" prop-name="cover_info.quotation_date" />
+            <double-click-to-input :obj="q" :editable="editable" prop-name="cover_info.quotation_date" />
           </p>
           <p>
             Quotation valid until:
-            <double-click-to-input :obj="q" prop-name="cover_info.quotation_valid_until" />
+            <double-click-to-input :obj="q" :editable="editable" prop-name="cover_info.quotation_valid_until" />
           </p>
           <p>
-            <double-click-to-input :obj="q" prop-name="seller_mail" />
+            <double-click-to-input :obj="q" :editable="editable" prop-name="seller_mail" />
           </p>
         </div>
 
@@ -42,17 +48,20 @@
 
         <div class="sq-cover-body">
           <p>
-            This proposed technical solution and commercial offer has been prepared for the supply of ESEEK 1P solar
-            tracker with a total peak power of
-            <double-click-to-input :obj="q" prop-name="capacity" numeric />
-            MWp, based on XXRp Bifacial module.
+            <!--  -->
+            This proposed technical solution and commercial offer has been prepared for the supply of
+            <double-click-to-input :obj="q" :editable="editable" prop-name="product_system" />
+            with a total peak power of
+            <double-click-to-input :obj="q" :editable="editable" prop-name="client_capacity" numeric />
+            , based on <double-click-to-input :obj="q" :editable="editable" prop-name="module_system" />.
           </p>
           <p>
             ESEEK solar tracker adopts Slew drive, which can have flexible design available, good adaptability for
             complex
             terrain, and the innovation of diamond-shaped torque tube, providing better bending and torsional
             capabilities
-            with minimum material. ESET team will fully assist XXX from product design, production, transportation,
+            with minimum material. ESET team will fully assist <double-click-to-input :obj="q" :editable="editable"
+              prop-name="client_company" /> from product design, production, transportation,
             on-site guidance for installation and commissioning to ensure the success of the project.
           </p>
         </div>
@@ -73,21 +82,23 @@
           <table>
             <tr>
               <td class="sq-td--w40">Project:</td>
-              <td class="sq-td--w400">{{ q.project_info.project }}</td>
+              <td class="sq-td--w400"><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="project_info.project" /></td>
               <td class="sq-td--w40">Customer:</td>
-              <td class="sq-td--w200">{{ q.project_info.customer }}</td>
+              <td class="sq-td--w200"><double-click-to-input :obj="q" :editable="editable" prop-name="client_company" />
+              </td>
             </tr>
             <tr>
               <td>MWDc:</td>
-              <td>{{ q.project_info.MWDc }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable" prop-name="design_capacity" /> </td>
               <td>Attention:</td>
-              <td>{{ q.project_info.attention }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable" prop-name="project_info.attention" /></td>
             </tr>
             <tr>
               <td>Location:</td>
-              <td>{{ q.project_info.location }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable" prop-name="project_info.location" /></td>
               <td>REF. No.:</td>
-              <td>{{ q.project_info.refNo }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable" prop-name="project_info.refNo" /></td>
             </tr>
           </table>
         </div>
@@ -99,52 +110,72 @@
           <table>
             <tr>
               <td class="sq-td--w100">Product:</td>
-              <td class="sq-td--w240">{{ q.proposed_tracker_solution.product }}</td>
+              <td class="sq-td--w240"><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.product" /></td>
               <td class="sq-td--w100">Module power:</td>
-              <td>{{ q.proposed_tracker_solution.module_power }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.module_power" /></td>
             </tr>
 
             <tr>
               <td>Drive system:</td>
-              <td>{{ q.proposed_tracker_solution.drive_system }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.drive_system" /></td>
               <td>Module No. / Strings</td>
-              <td>{{ q.proposed_tracker_solution.module_no_strings }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.module_no_strings" /></td>
             </tr>
 
             <tr>
               <td>Control & Communication:</td>
-              <td>{{ q.proposed_tracker_solution.control_communication }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.control_communication" /></td>
               <td>Operation Features:</td>
-              <td>{{ q.proposed_tracker_solution.operation_features }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.operation_features" :arrayNumbered="false" block /></td>
             </tr>
 
             <tr>
               <td>Power Source:</td>
-              <td>{{ q.proposed_tracker_solution.power_source }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.power_source" /></td>
               <td>Slope available:</td>
-              <td>{{ q.proposed_tracker_solution.slope_available }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.slope_available" :arrayNumbered="false" block /></td>
             </tr>
 
             <tr>
               <td>Design Wind speed:</td>
-              <td>{{ q.proposed_tracker_solution.design_wind_speed }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.design_load.wind" /></td>
               <td></td>
               <td></td>
             </tr>
 
             <tr>
+              <td>Design Snow Load:</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.design_load.snow" /></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
               <td>Corrosion protection:</td>
-              <td>{{ q.proposed_tracker_solution.corrosion_protection }}
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.corrosion_protection" :arrayNumbered="false" block />
               </td>
               <td>Rotation Features:</td>
-              <td>{{ q.proposed_tracker_solution.rotation_features }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.rotation_features" :arrayNumbered="false" block /></td>
             </tr>
 
             <tr>
               <td>Post type & Embedments Depth:</td>
-              <td>{{ q.proposed_tracker_solution.post_type_embedments_depth }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable"
+                  prop-name="proposed_tracker_solution.post_type_embedments_depth" :arrayNumbered="false" block /></td>
               <td>Design:</td>
-              <td>{{ q.proposed_tracker_solution.design }}</td>
+              <td><double-click-to-input :obj="q" :editable="editable" prop-name="proposed_tracker_solution.design"
+                  :arrayNumbered="false" block /></td>
             </tr>
           </table>
 
@@ -153,13 +184,8 @@
               <tr>
                 <td class="sq-note-label-cell"><span class="note">Note:</span></td>
                 <td class="sq-note-value-cell">
-                  <double-click-to-input
-                    :obj="q"
-                    prop-name="proposed_tracker_solution.notes"
-                    display-class="note"
-                    block
-                    :array-rows="5"
-                  />
+                  <double-click-to-input :obj="q" :editable="editable" prop-name="proposed_tracker_solution.notes"
+                    display-class="note" block :array-rows="5" />
                 </td>
               </tr>
             </table>
@@ -171,38 +197,47 @@
         <div class="table3">
           <span class="catalog">3 Price and Payment Terms</span>
           <hr>
-          <table>
+          <table class="sq-price-table" :style="{ width: priceTableWidthPx + 'px' }">
+            <colgroup>
+              <col style="width: 120px" />
+              <col style="width: 280px" />
+              <col v-for="(delivery, idx) in q.price_and_payment_terms.delivery" :key="'delivery-col-' + idx"
+                :style="{ width: deliveryColWidthPx + 'px' }" />
+              <col style="width: 100px" />
+            </colgroup>
             <thead>
               <tr>
-                <td class="sq-price-head sq-price-head--item">Item</td>
-                <td class="sq-price-head sq-price-head--std">Design Capacity<br>（MW）</td>
-                <td class="sq-price-head sq-price-head--std">Description</td>
-                <td class="sq-price-head sq-price-head--std">USD / Wp<br>FOB Qingdao</td>
-                <td class="sq-price-head sq-price-head--std">USD / Wp<br>CIF Casablanca</td>
-                <td class="sq-price-head sq-price-head--std">Total Amount/USD<br>CIF Casablanca</td>
+                <td class="sq-price-head">Item</td>
+                <td class="sq-price-head">Description</td>
+                <td v-for="delivery in q.price_and_payment_terms.delivery" :key="delivery.id"
+                  class="sq-price-head">
+                  {{ q.price_and_payment_terms.currency }} / Wp<br>
+                  {{ delivery.type }} {{ delivery.port }}
+                </td>
+                <td class="sq-price-head">Total {{
+                  q.price_and_payment_terms.delivery[q.price_and_payment_terms.delivery.length - 1].type }}
+                  <br>Amount/{{ q.price_and_payment_terms.currency }}</td>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td class="sq-td-left">
-                  <span class="note" v-for="(item, index) in q.price_and_payment_terms.item" :key="index">
-                    {{ item }}
-                    <br>
-                  </span>
-                </td>
-                <td class="sq-td-center">{{ q.price_and_payment_terms.design_capacity }}</td>
-                <td class="sq-td-center">{{ q.price_and_payment_terms.description }}</td>
-                <td class="sq-td-center">{{ q.price_and_payment_terms.FOB }}</td>
-                <td class="sq-td-center">{{ q.price_and_payment_terms.CIF }}</td>
-                <td class="sq-td-center">{{ q.price_and_payment_terms.CIF_total }}</td>
-              </tr>
-              <tr>
-                <td colspan="5" class="sq-td-center">On site engineer service
-                  {{ q.price_and_payment_terms.on_site_engineer }} man*days
+              <tr v-for="item in q.price_and_payment_terms.items" :key="item.id">
+                <td class="sq-td--tl">
+                  <double-click-to-input :obj="item" :editable="editable" prop-name="item" :array-numbered="false"
+                    block />
                 </td>
                 <td class="sq-td-center">
-                  {{ q.price_and_payment_terms.on_site_engineer_included ? 'Included' : '' }}
+                  <double-click-to-input :obj="item" :editable="editable" prop-name="description"
+                    :array-numbered="false" block />
                 </td>
+                <td v-for="(price, priceIdx) in item.prices" :key="'price-' + priceIdx" class="sq-td-center">{{ price }}</td>
+                <td class="sq-td-center">{{ Math.max(...item.prices) * item.item_capacity * 1000 }}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td class="sq-td-center sq-price-total">Total</td>
+                <td v-for="d in q.price_and_payment_terms.delivery" :key="d.id"></td>
+                <td class="sq-td-center sq-price-total">{{ q.price_and_payment_terms.items.reduce((acc, item) => acc
+                  + Math.max(...item.prices) * item.item_capacity * 1000, 0) }}</td>
               </tr>
             </tbody>
           </table>
@@ -210,7 +245,8 @@
             <table>
               <tr>
                 <td class="sq-note-label-cell"><span class="note">Payment Term:</span></td>
-                <td><span class="note">By negotiation</span></td>
+                <td><span class="note"><double-click-to-input :obj="q" :editable="editable"
+                      prop-name="price_and_payment_terms.payment_terms" /></span></td>
               </tr>
             </table>
           </div>
@@ -220,13 +256,8 @@
               <tr>
                 <td class="sq-note-label-cell"><span class="note">Note:</span></td>
                 <td class="sq-note-value-cell">
-                  <double-click-to-input
-                    :obj="q"
-                    prop-name="price_and_payment_terms.notes"
-                    display-class="note"
-                    block
-                    :array-rows="5"
-                  />
+                  <double-click-to-input :obj="q" :editable="editable" prop-name="price_and_payment_terms.notes"
+                    display-class="note" block :array-rows="5" />
                 </td>
               </tr>
             </table>
@@ -242,24 +273,29 @@
               <td class="sq-td--w700">
                 <table>
                   <tr>
-                    <td class="sq-td--w200 sq-td--tl">Incoterms 2010:fdsa</td>
-                    <td class="sq-td--tl">{{ q.delivery_warranty.incoterms_2010 }}</td>
+                    <td class="sq-td--w200 sq-td--tl">Incoterms 2010:</td>
+                    <td class="sq-td--tl"><double-click-to-input :obj="q" :editable="editable"
+                        prop-name="delivery_warranty.incoterms_2010" /></td>
                   </tr>
                   <tr>
                     <td>Port of Departure:</td>
-                    <td>{{ q.delivery_warranty.port_of_departure }}</td>
+                    <td><double-click-to-input :obj="q" :editable="editable"
+                        prop-name="delivery_warranty.port_of_departure" :options="portDepartureOptions" /></td>
                   </tr>
                   <tr>
                     <td>No. of Containers:</td>
-                    <td>{{ q.delivery_warranty.no_of_containers }}</td>
+                    <td><double-click-to-input :obj="q" :editable="editable"
+                        prop-name="delivery_warranty.no_of_containers" /></td>
                   </tr>
                   <tr>
                     <td>1st Delivery lead time:</td>
-                    <td>{{ q.delivery_warranty.first_delivery_lead_time }}</td>
+                    <td><double-click-to-input :obj="q" :editable="editable"
+                        prop-name="delivery_warranty.first_delivery_lead_time" /></td>
                   </tr>
                   <tr>
                     <td>Estimated Delivery rate:</td>
-                    <td>{{ q.delivery_warranty.estimated_delivery_rate }}</td>
+                    <td><double-click-to-input :obj="q" :editable="editable"
+                        prop-name="delivery_warranty.estimated_delivery_rate" /></td>
                   </tr>
                 </table>
               </td>
@@ -278,15 +314,18 @@
                   </tr>
                   <tr>
                     <td class="sq-td--w200">Steel structural components:</td>
-                    <td>10 years</td>
+                    <td><double-click-to-input :obj="q" :editable="editable"
+                        prop-name="delivery_warranty.steel_structural_components" /></td>
                   </tr>
                   <tr>
                     <td>Electro & Mechanical components:</td>
-                    <td>{{ q.delivery_warranty.electro_mechanical_components }}</td>
+                    <td><double-click-to-input :obj="q" :editable="editable"
+                        prop-name="delivery_warranty.electro_mechanical_components" /></td>
                   </tr>
                   <tr>
                     <td>Galvanizing protection:</td>
-                    <td>{{ q.delivery_warranty.galvanizing_protection }}</td>
+                    <td><double-click-to-input :obj="q" :editable="editable"
+                        prop-name="delivery_warranty.galvanizing_protection" /></td>
                   </tr>
                 </table>
               </td>
@@ -312,22 +351,33 @@
                   <tbody>
                     <tr>
                       <td>Fasteners spares</td>
-                      <td>{{ q.construction_spare_parts.fasteners_spares.percentage }}%</td>
+                      <!-- <td>{{ q.construction_spare_parts.fasteners_spares.percentage }}%</td> -->
+                      <td><double-click-to-input type="number" :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.fasteners_spares.percentage" />%</td>
                       <td>
-                        {{ q.construction_spare_parts.fasteners_spares.price ? 'included' : 'not included' }}
+                        <double-click-to-input :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.fasteners_spares.price"
+                          :boolean-labels="sparePriceLabels" />
                       </td>
                     </tr>
                     <tr>
                       <td>Up Structure & Damper</td>
-                      <td>{{ q.construction_spare_parts.up_structure_damper.percentage }}%</td>
+                      <td><double-click-to-input type="number" :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.up_structure_damper.percentage" />%</td>
                       <td>
-                        {{ q.construction_spare_parts.up_structure_damper.price ? 'included' : 'not included' }}
+                        <double-click-to-input :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.up_structure_damper.price"
+                          :boolean-labels="sparePriceLabels" />
                       </td>
                     </tr>
                     <tr>
                       <td>Control Box (TCU)</td>
-                      <td>{{ q.construction_spare_parts.control_box_tcu.percentage }}%</td>
-                      <td>{{ q.construction_spare_parts.control_box_tcu.price ? 'included' : 'not included' }}
+                      <td><double-click-to-input type="number" :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.control_box_tcu.percentage" />%</td>
+                      <td>
+                        <double-click-to-input :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.control_box_tcu.price"
+                          :boolean-labels="sparePriceLabels" />
                       </td>
                     </tr>
                   </tbody>
@@ -345,23 +395,31 @@
                   <tbody>
                     <tr>
                       <td>Post & others</td>
-                      <td>{{ q.construction_spare_parts.post_others.percentage }}%</td>
-                      <td>{{ q.construction_spare_parts.post_others.price ? 'included' : 'not included' }}</td>
+                      <td><double-click-to-input type="number" :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.post_others.percentage" />%</td>
+                      <td>
+                        <double-click-to-input :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.post_others.price" :boolean-labels="sparePriceLabels" />
+                      </td>
                     </tr>
                     <tr>
                       <td>Slew drive & Motor</td>
-                      <td>{{ q.construction_spare_parts.slew_drive_motor.percentage }}%</td>
+                      <td><double-click-to-input type="number" :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.slew_drive_motor.percentage" />%</td>
                       <td>
-                        {{ q.construction_spare_parts.slew_drive_motor.price ? 'included' : 'not included' }}
+                        <double-click-to-input :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.slew_drive_motor.price"
+                          :boolean-labels="sparePriceLabels" />
                       </td>
                     </tr>
                     <tr>
                       <td>Communication Box (NCU)</td>
-                      <td>{{ q.construction_spare_parts.communication_box_ncu.percentage }}%</td>
+                      <td><double-click-to-input type="number" :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.communication_box_ncu.percentage" />%</td>
                       <td>
-                        {{
-                          q.construction_spare_parts.communication_box_ncu.price ? 'included' : 'not included'
-                        }}
+                        <double-click-to-input :obj="q" :editable="editable"
+                          prop-name="construction_spare_parts.communication_box_ncu.price"
+                          :boolean-labels="sparePriceLabels" />
                       </td>
                     </tr>
                   </tbody>
@@ -398,12 +456,15 @@
               <tr v-for="item in q.tracker_supply" :key="item.id">
                 <td class="sq-td-index">{{ item.id }}</td>
                 <td>{{ tracker_supply_item[item.id] }}</td>
-                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 ESET Scope"
-                  @dblclick="setAnnexRowScope(item, 'es')">{{ item.es | filterChecked }}</td>
-                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 Customer Scope"
-                  @dblclick="setAnnexRowScope(item, 'cs')">{{ item.cs | filterChecked }}</td>
-                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 Optional"
-                  @dblclick="setAnnexRowScope(item, 'op')">{{ item.op | filterChecked }}</td>
+                <td class="sq-td-center" :class="{ 'sq-annex-scope-cell': editable }"
+                  :title="editable ? '双击选择 ESET Scope' : null" @dblclick="setAnnexRowScope(item, 'es')">{{ item.es |
+                  filterChecked }}</td>
+                <td class="sq-td-center" :class="{ 'sq-annex-scope-cell': editable }"
+                  :title="editable ? '双击选择 Customer Scope' : null" @dblclick="setAnnexRowScope(item, 'cs')">{{ item.cs |
+                  filterChecked }}</td>
+                <td class="sq-td-center" :class="{ 'sq-annex-scope-cell': editable }"
+                  :title="editable ? '双击选择 Optional' : null" @dblclick="setAnnexRowScope(item, 'op')">{{ item.op |
+                  filterChecked }}</td>
               </tr>
             </tbody>
           </table>
@@ -424,12 +485,15 @@
               <tr v-for="item in q.Service" :key="item.id">
                 <td class="sq-td-index">{{ item.id }}</td>
                 <td>{{ service_item[item.id] }}</td>
-                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 ESET Scope"
-                  @dblclick="setAnnexRowScope(item, 'es')">{{ item.es | filterChecked }}</td>
-                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 Customer Scope"
-                  @dblclick="setAnnexRowScope(item, 'cs')">{{ item.cs | filterChecked }}</td>
-                <td class="sq-td-center sq-annex-scope-cell" title="双击选择 Optional"
-                  @dblclick="setAnnexRowScope(item, 'op')">{{ item.op | filterChecked }}</td>
+                <td class="sq-td-center" :class="{ 'sq-annex-scope-cell': editable }"
+                  :title="editable ? '双击选择 ESET Scope' : null" @dblclick="setAnnexRowScope(item, 'es')">{{ item.es |
+                  filterChecked }}</td>
+                <td class="sq-td-center" :class="{ 'sq-annex-scope-cell': editable }"
+                  :title="editable ? '双击选择 Customer Scope' : null" @dblclick="setAnnexRowScope(item, 'cs')">{{ item.cs |
+                  filterChecked }}</td>
+                <td class="sq-td-center" :class="{ 'sq-annex-scope-cell': editable }"
+                  :title="editable ? '双击选择 Optional' : null" @dblclick="setAnnexRowScope(item, 'op')">{{ item.op |
+                  filterChecked }}</td>
               </tr>
             </tbody>
           </table>
@@ -442,7 +506,7 @@
 <script>
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
-import { Quotation } from '@/views/pages/eset/trackers2/utils/classQuotation'
+import { Quotation } from './classQuotation'
 import DoubleClickToInput from './DoubleClickToInput.vue'
 import logoUrl from './fromFig/esetlogo.png'
 import heroUrl from './fromFig/cover_img.jpg'
@@ -461,10 +525,11 @@ export default {
   },
   data() {
     return {
-      inputData:{},
-      quotation:{},
+      editable: true,
+      sparePriceLabels: ['included', 'not included'],
+      portDepartureOptions: ['SHANGHAI', 'QINGDAO', 'TAINJING', 'LAINYUNGANG'],
+      quotation: new Quotation(),
       pdfExporting: false,
-      internalQuotation: new Quotation(),
       assets: {
         logo: logoUrl,
         hero: heroUrl,
@@ -484,7 +549,7 @@ export default {
 
       service_item: {
         1: 'Tracker design and engineering (Including static, dynamic and instability aeroelastic analysis.)',
-        2: 'Extra On-site Service 230USD/day/engineer',
+        2: 'Extra On-site Service 250USD/day/engineer',
         3: 'Preliminary layout for tracker',
         4: 'PVSyst simulation report',
         5: 'Tracker foundation civil design',
@@ -501,16 +566,30 @@ export default {
     q() {
       return this.quotation
     },
+    priceTableWidthPx() {
+      return 720
+    },
+    deliveryColWidthPx() {
+      const list = this.q?.price_and_payment_terms?.delivery
+      const n = Array.isArray(list) && list.length > 0 ? list.length : 1
+      const fixed = 120 + 280 + 100
+      return (this.priceTableWidthPx - fixed) / n
+    },
   },
   methods: {
+    toggleQuotationEditable() {
+      this.editable = !this.editable
+    },
     /** 将本行 √ 移到被双击的 ESET / Customer / Optional 列（互斥） */
     setAnnexRowScope(row, scope) {
+      if (!this.editable) return
       if (!row || !['es', 'cs', 'op'].includes(scope)) return
       this.$set(row, 'es', scope === 'es' ? 1 : 0)
       this.$set(row, 'cs', scope === 'cs' ? 1 : 0)
       this.$set(row, 'op', scope === 'op' ? 1 : 0)
     },
     async exportQuotationPdf() {
+      this.editable = false;
       this.pdfExporting = true
       try {
         await this.$nextTick()
@@ -548,121 +627,7 @@ export default {
     },
   },
   mounted() {
-    // if (this.quotationParent) {
-    //   this.quotation = this.quotationParent
-    //   return
-    // }
-    this.quotation =  {
-        seller: '',
-        seller_mail: 'ann.liu@eset.com',
-        plan_code: '',
-        project_code: '',
-        project_name: 'TRACKER QUOTATION FOR 40 MWdc TATA PROJECT',
-        capacity: 40,
-        director_remark: '',
-        cover_info: {
-          quotation_date: '06-May-2026',
-          quotation_valid_until: '26-May-2026',
-        },
-        project_info: {
-          project: 'TATA solar project',
-          customer: 'JET ENERGY',
-          MWDc: 39.515,
-          attention: 'Mr.Tarik',
-          location: `TATA  29° 58' 58.91" N – 8° 12' 51.45" W`,
-          refNo: '',
-        },
-        proposed_tracker_solution: {
-          product: 'Horizontal Single-Axis tracker / 1P Single-Row',
-          drive_system: 'Direct DC motor &  Multipoint Slew Drive',
-          control_communication: 'Network Control Unit (NCU) Control trackers via LoRa wireless protocal (one NCU per weather station). Tracker mounts Tracker Control Unit (TCU) with\n' +
-            'inclinometer and its tracking algorithm',
-          power_source: 'Self Power/PV String DC power, lithium battery backup',
-          design_wind_speed: 'ASCE7-22，47 m/s with 3s gust （MRI=50）',
-          corrosion_protection: 'Atmosphere C4 as per ISO 12944-2\n' +
-            'Torque Tube & Purlin - ZAM 310g/㎡\n' +
-            'Post - HDG 85 μm\n' +
-            'Fasteners - HDG 55 μm',
-          post_type_embedments_depth: 'Drive Post Depth =2000mm;\n' +
-            'General Post Depth =1500mm;\n' +
-            'Final Embedment depth up to POT Result; confirmation',
-          module_power: 'Bifacial 625 Wp (2382*1134*30 mm)',
-          module_no_strings: '28×4，28×2',
-          operation_features: '18 m/s stow position with 3 s gust at 10 m\n' +
-            'Stow position facing the wind at 0~3° \n' +
-            'Snow load of 0 KN/m²\n' +
-            'Earthquake level 0',
-          slope_available: 'N-S : Maximum 15%\n' +
-            'E-W :  Maximum 15%',
-          rotation_features: '±60°  Rotation Range with 1°  Tacking Accuracy\n' +
-            '500 mm minimum module ground clearance',
-          design: '25-year Structural Design life\n' +
-            'Wind velocities and pressures as per Standard Building Code',
-          notes: ['The final design is related to the confirmation of module, layout and foundation design and other parameters.',
-                'any change in these parameters may lead to a revision of the design and price.'
-            ]
-        },
-        price_and_payment_terms: {
-          item:['ESEEK 1P Solar Tracker', '1V112,4-strings Exterior:Edge:Int=11.7%:19.5%:59.3%','1V56,2-strings, Exterior:Edge:Int=1.1%:8.4%:0%', '1V112,4-strings Exterior:Edge:Int=11.7%:19.5%:59.3%','1V56,2-strings, Exterior:Edge:Int=1.1%:8.4%:0%'],
-          design_capacity: 39.52,
-          description: 'Ramming Pile',
-          FOB: '0.0475',
-          CIF: '0.0520',
-          CIF_total: 0,
-          on_site_engineer: 75,
-          on_site_engineer_included: true,
-          notes: [
-            'Number of exterior and interior tracker subject to the final layout design;',
-            'The length of the post and Embedded Post Depth have been calculated on the basis of the geotechnical report received, it may changed after POT result and caculation;',
-            'The Logistics cost in this offer are estimated at the date of the offer. The final cost of the Logistics will be subjected to the real cost upon contract execution.',
-          ],
-        },
-        delivery_warranty: {
-          incoterms_2010: 'FOB /CIF Casablanca',
-          port_of_departure: 'QINGDAO',
-          no_of_containers: '64  units 40HQ',
-          first_delivery_lead_time: 'By negotiation',
-          estimated_delivery_rate: 'By negotiation',
-          steel_structural_components: '10 years',
-          electro_mechanical_components: '7 years',
-          galvanizing_protection: '10 years',
-        },
-        construction_spare_parts: {
-          fasteners_spares: { percentage: 2, price: true, },
-          up_structure_damper: { percentage: 0.2, price: true, },
-          control_box_tcu: { percentage: 0.5, price: true, },
-          post_others: { percentage: 0.5, price: true, },
-          slew_drive_motor: { percentage: 0.2, price: true, },
-          communication_box_ncu: { percentage: 5, price: true, },
-        },
-        //Item内容不写在tracker_supply中，而是写在模板上，可减少数据库保存时冗余
-        //为了减少保存到数据库中数据量，将Item内容不写在数据中，而是在模板上处理，
-        // 同时，将eset_scope简写为es,customer_scope简写为cs,optional简写为op,true简写为1,false简写为0
-        tracker_supply: [
-          { id: 1, es: 1, cs: 0, op: 0 },
-          { id: 2, es: 1, cs: 0, op: 0 },
-          { id: 3, es: 1, cs: 0, op: 0 },
-          { id: 4, es: 1, cs: 0, op: 0 },
-          { id: 5, es: 1, cs: 0, op: 0 },
-          { id: 6, es: 1, cs: 0, op: 0 },
-          { id: 7, es: 0, cs: 1, op: 0 },
-          { id: 8, es: 0, cs: 1, op: 0 }
-        ],
-        Service: [
-          { id: 1, es: 1, cs: 0, op: 0 },
-          { id: 2, es: 0, cs: 0, op: 1 },
-          { id: 3, es: 1, cs: 0, op: 0 },
-          { id: 4, es: 0, cs: 0, op: 1 },
-          { id: 5, es: 0, cs: 0, op: 1 },
-          { id: 6, es: 0, cs: 0, op: 1 },
-          { id: 7, es: 0, cs: 1, op: 0 },
-          { id: 8, es: 0, cs: 0, op: 1 },
-          { id: 9, es: 0, cs: 0, op: 1 },
-          { id: 10, es: 0, cs: 1, op: 0 },
-          { id: 11, es: 0, cs: 1, op: 0 },
-        ],
-        service_extra_onsite_engineer_price: 230,
-      }
+
   },
   filters: {
     filterChecked(value) {
@@ -691,14 +656,25 @@ $sq-frame-divider: #c5cbd6;
   flex-direction: column;
   align-items: center;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .sq-pdf-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
   width: 100%;
   max-width: 800px;
   margin-bottom: 16px;
+  padding: 8px 12px;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
 }
 
 .seller-quotation-frame+.seller-quotation-frame {
@@ -853,8 +829,8 @@ $sq-frame-divider: #c5cbd6;
 
 /* ---- 文档页眉（Frame 2 / 3） ---- */
 .sq-doc-head {
-  margin-bottom: 18px;
-  padding-bottom: 12px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
   border-bottom: 1px solid #e2e2e2;
 }
 
@@ -875,6 +851,12 @@ $sq-frame-divider: #c5cbd6;
 }
 
 /* ---- Frame 2：章节表格（table1–table5） ---- */
+.seller-quotation-frame--2 .sq-doc-head {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
 .seller-quotation-frame--2 .catalog {
   font-size: 10px;
 }
@@ -886,6 +868,13 @@ $sq-frame-divider: #c5cbd6;
 .seller-quotation-frame--2 td {
   font-size: 6px;
   height: 20px;
+}
+
+/* table2：含可编辑字段的单元格显示下框线 */
+.table2 table td:has(.double-click-to-input) {
+  border-bottom: 1px solid #666;
+  vertical-align: bottom;
+  padding-bottom: 2px;
 }
 
 .seller-quotation-frame--2 .note {
@@ -925,13 +914,14 @@ $sq-frame-divider: #c5cbd6;
 .sq-price-head {
   text-align: center;
 }
-
-.sq-price-head--item {
-  width: 280px;
+.sq-price-total {
+  text-align: center;
+  font-weight: bold;
 }
 
-.sq-price-head--std {
-  width: 140px;
+.sq-price-table {
+  table-layout: fixed;
+  max-width: 100%;
 }
 
 .sq-spacer--y6 {

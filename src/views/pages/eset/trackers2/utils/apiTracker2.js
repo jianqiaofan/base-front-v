@@ -29,6 +29,12 @@ export default {
 
   //将结构计算软件中导出的文本转化为
   trackStr2Obj(fileName, trackerPos, commonInfo, strackerInfo, initInfo) {
+    console.log("================================================")
+    console.log("fileName",fileName)
+    console.log("trackerPos",trackerPos)
+    console.log("commonInfo",commonInfo)
+    console.log("strackerInfo",strackerInfo)
+    console.log("initInfo",initInfo)
     // console.log("commonInfo",commonInfo)
     // console.log("strackerInfo",strackerInfo)
     let post_info_lst = []
@@ -51,8 +57,10 @@ export default {
     let b_diameter = d[4] //截面尺寸
 
     let beam_info_lst = []  //beam 对象内容 ：起点，终点，截面，材质，长度，类别（中间主梁/驱动主梁/端部主梁）
+    let beam_info_lst_1 = []  //beam 按立柱分段
+    let beam_info_lst_2 = []  //beam 按12.5米分段
 
-    //处理Diamond截面，分段点取立柱断点；
+    //处理Diamond截面，分段点取立柱断点；fdsa
     if (b_section_type.includes('Diamond')) {
       beam_divide.unshift(0)  //加上梁起点
       beam_divide.push(beam_length)  //加上梁终点
@@ -74,12 +82,14 @@ export default {
           start: arr[i],
           end: arr[i + 1],
           section: section,
+          origin_section: section,//原始截面
           material: b_material,
           length: arr[i + 1] - arr[i],  //350为插芯在后台再考虑，这里强调几何数据
           category: cg
         }
-        beam_info_lst.push(f)
+        beam_info_lst_1.push(f)
       }
+      beam_info_lst = beam_info_lst_1
     }
 
 //八角型主梁时，分段点以驱动立柱分一次，然后以不超过12.5米（运输要求）分段，分段数影响报箍数量(两个驱动立柱之间至少有一个抱箍)
@@ -123,15 +133,17 @@ export default {
         }
 
         let f = {
-          start: arr[i],
-          end: arr[i + 1],
+          start: start,
+          end: end,
           section: section,
+          origin_section: section,//原始截面
           material: b_material,
-          length: arr[i + 1] - arr[i],  //350为插芯在后台再考虑，这里强调几何数据
+          length: len,  //350为插芯在后台再考虑，这里强调几何数据
           category: cg
         }
-        beam_info_lst.push(f)
+        beam_info_lst_2.push(f)
       }
+      beam_info_lst = beam_info_lst_2
     }
 
     //post 对象内容 ：位置，截面，材质，高度，类别（非驱动/驱动）
@@ -148,6 +160,7 @@ export default {
         category: ar[1].startsWith('t') ? '驱动' : '非驱动',
         material: ar[2],
         section: ar[3],
+        origin_section: ar[3],//原始截面
         height: strackerInfo.h_post - this.postLengthReduce(ar[1].startsWith('t'), b_section_type, b_diameter, initInfo.slew_drive_inch),  //柱子高度
         pile_type: initInfo.pile_type,  //桩型  0-桩柱一体  1-地脚螺栓 2-PHC管桩 3-钢桩
         pile_obj: initInfo.pile_obj, //桩的对象（给后台进行Bom表生成）
@@ -202,7 +215,6 @@ export default {
           amount: purlinCount - Math.floor(purlinCount * 0.3),
           installPoints:'4*M6',
           blockNeed:false
-
         }]
     }
     if (trackerPos == 'Interior') {
@@ -271,6 +283,8 @@ export default {
     r.post_info_lst = post_info_lst  //立柱信息列表
     r.drive_post = drive_post  //驱动立柱信息
     r.beam_info_lst = beam_info_lst  //主梁信息列表
+    r.beam_info_lst_1 = beam_info_lst_1  //主梁信息列表按立柱分段
+    r.beam_info_lst_2 = beam_info_lst_2  //主梁信息列表按12.5米分段
     r.beam_section_dim = b_diameter  //主梁截面尺寸
     r.beam_section_type = b_section_type  //主梁类型
     r.resultList = []    //存放Bom表数据

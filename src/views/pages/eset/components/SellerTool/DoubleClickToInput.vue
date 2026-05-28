@@ -11,11 +11,10 @@
   >
     <span
       v-if="!editing"
-      class="double-click-to-input__display"
-      :class="displayClass"
-      title="双击编辑"
-      @dblclick="startEdit"
-    >{{ displayText }}</span>
+      :class="displaySpanClass"
+      :title="editable ? '双击编辑' : null"
+      @dblclick="onDisplayDblclick"
+    >{{ textForShow }}</span>
     <div
       v-else-if="isArrayMode"
       class="double-click-to-input__textarea-wrap"
@@ -31,6 +30,40 @@
         @keyup.esc.native="cancel"
       />
     </div>
+    <el-select
+      v-else-if="isBooleanMode"
+      ref="boolSelect"
+      v-model="draftBool"
+      size="mini"
+      class="double-click-to-input__select"
+      @change="commitBoolean"
+      @blur="onBooleanSelectBlur"
+      @visible-change="onBooleanSelectVisibleChange"
+    >
+      <el-option :label="resolvedBooleanLabels[0]" :value="true" />
+      <el-option :label="resolvedBooleanLabels[1]" :value="false" />
+    </el-select>
+    <el-select
+      v-else-if="isSelectMode"
+      ref="optionSelect"
+      v-model="draft"
+      size="mini"
+      filterable
+      allow-create
+      default-first-option
+      :placeholder="editable ? '选择或输入' : ''"
+      class="double-click-to-input__select"
+      @change="commitSelect"
+      @blur="onSelectBlur"
+      @visible-change="onSelectVisibleChange"
+    >
+      <el-option
+        v-for="opt in resolvedOptions"
+        :key="opt"
+        :label="opt"
+        :value="opt"
+      />
+    </el-select>
     <el-date-picker
       v-else-if="isDateMode"
       ref="datePicker"
@@ -210,12 +243,41 @@ export default {
       type: Number,
       default: 4,
     },
+    /** false 时仅展示普通文本，不可双击编辑 */
+    editable: {
+      type: Boolean,
+      default: true,
+    },
+    /**
+     * 布尔值为 true/false 时的展示文案，长度须为 2：[true 对应, false 对应]
+     * 未传或非法时默认为 ['true', 'false']
+     */
+    booleanLabels: {
+      type: Array,
+      default: () => ['true', 'false'],
+    },
+    /** 数组展示时是否在每行前加 1）、2）… 序号，默认 true */
+    arrayNumbered: {
+      type: Boolean,
+      default: true,
+    },
+    /**
+     * 字符串/数字字段的可选值；传入且非空时，双击用下拉选择（可筛选、可手工输入新值）
+     * 勿与数组类型字段混用（数组字段请用数据本身的数组 + arrayNumbered）
+     */
+    options: {
+      type: Array,
+      default: () => [],
+    },
   },
   data() {
     return {
       editing: false,
       draft: '',
       draftDate: null,
+      draftBool: true,
+      booleanSelectOpen: false,
+      selectOpen: false,
     }
   },
   computed: {
@@ -232,46 +294,120 @@ export default {
     isArrayMode() {
       return Array.isArray(this.rawValue)
     },
+    isBooleanMode() {
+      return this.pathValid && typeof this.rawValue === 'boolean'
+    },
+    resolvedBooleanLabels() {
+      const labels = this.booleanLabels
+      if (Array.isArray(labels) && labels.length === 2) {
+        return [String(labels[0]), String(labels[1])]
+      }
+      return ['true', 'false']
+    },
+    isScalarValue() {
+      const t = typeof this.rawValue
+      return t === 'string' || t === 'number'
+    },
+    resolvedOptions() {
+      if (!Array.isArray(this.options)) return []
+      return this.options
+        .filter(opt => opt !== null && opt !== undefined && String(opt).trim() !== '')
+        .map(opt => String(opt))
+    },
+    isSelectMode() {
+      if (!this.pathValid || this.isArrayMode || this.isBooleanMode) return false
+      if (!this.isScalarValue) return false
+      if (this.date || isDatePropName(this.propName)) return false
+      return this.resolvedOptions.length > 0
+    },
     isDateMode() {
-      if (this.isArrayMode) return false
+      if (this.isArrayMode || this.isBooleanMode || this.isSelectMode) return false
       return this.date || isDatePropName(this.propName)
     },
     rootTag() {
       return this.block || this.isArrayMode ? 'div' : 'span'
     },
+    emptyPlaceholder() {
+      return this.editable ? '    ' : ''
+    },
     displayText() {
       if (!this.pathValid) return ''
-      if (isEmptyDisplayValue(this.rawValue)) return '    '
+      if (isEmptyDisplayValue(this.rawValue)) return this.emptyPlaceholder
       if (this.isArrayMode) {
         const items = this.rawValue.filter(item => item !== null && item !== undefined && String(item).trim() !== '')
-        if (items.length === 0) return '    '
+        if (items.length === 0) return this.emptyPlaceholder
         if (items.length === 1) return String(items[0])
-        return items.map((item, index) => `${index + 1}）${item}`).join('\n')
+        if (this.arrayNumbered) {
+          return items.map((item, index) => `${index + 1}）${item}`).join('\n')
+        }
+        return items.map(item => String(item)).join('\n')
+      }
+      if (this.isBooleanMode) {
+        return this.rawValue === true ? this.resolvedBooleanLabels[0] : this.resolvedBooleanLabels[1]
       }
       if (this.isDateMode) {
-        return formatQuotationDateEnglish(this.rawValue) || '    '
+        return formatQuotationDateEnglish(this.rawValue) || this.emptyPlaceholder
       }
       return String(this.rawValue)
     },
+    displaySpanClass() {
+      const classes = []
+      if (this.editable) {
+        classes.push('double-click-to-input__display')
+      } else if (this.isArrayMode) {
+        classes.push('double-click-to-input__display-readonly')
+      }
+      if (this.displayClass) {
+        classes.push(this.displayClass)
+      }
+      return classes.length ? classes : null
+    },
+    textForShow() {
+      return this.displayText
+    },
+  },
+  watch: {
+    editable(val) {
+      if (!val) this.cancel()
+    },
   },
   methods: {
+    onDisplayDblclick() {
+      if (this.editable) this.startEdit()
+    },
     startEdit() {
-      if (!this.pathValid) return
+      if (!this.editable || !this.pathValid) return
       this.editing = true
       if (this.isArrayMode) {
         const items = Array.isArray(this.rawValue) ? this.rawValue : []
         this.draft = items
           .map(item => (item === null || item === undefined ? '' : String(item)))
           .join('\n')
-      } else if (this.isDateMode) {
-        this.draftDate = parseQuotationDateEnglish(this.rawValue)
-        this.draft = formatQuotationDateEnglish(this.rawValue)
+      } else if (this.isBooleanMode) {
+        this.draftBool = this.rawValue === true
+      } else if (this.isSelectMode || this.isDateMode) {
+        if (this.isDateMode) {
+          this.draftDate = parseQuotationDateEnglish(this.rawValue)
+          this.draft = formatQuotationDateEnglish(this.rawValue)
+        } else {
+          this.draft = isEmptyDisplayValue(this.rawValue) ? '' : String(this.rawValue)
+        }
       } else {
         this.draft = isEmptyDisplayValue(this.rawValue) ? '' : String(this.rawValue)
       }
       this.$nextTick(() => this.focusEditor())
     },
     focusEditor() {
+      if (this.isSelectMode) {
+        const sel = this.$refs.optionSelect
+        if (sel && sel.focus) sel.focus()
+        return
+      }
+      if (this.isBooleanMode) {
+        const sel = this.$refs.boolSelect
+        if (sel && sel.focus) sel.focus()
+        return
+      }
       if (this.isDateMode) {
         const picker = this.$refs.datePicker
         if (picker && picker.focus) picker.focus()
@@ -290,21 +426,71 @@ export default {
           .split(/\r?\n/)
           .map(line => line.trim())
           .filter(line => line.length > 0)
+      } else if (this.isBooleanMode) {
+        value = this.draftBool === true
       } else if (this.isDateMode) {
         value = formatQuotationDateEnglish(this.draftDate || this.draft)
         if (!value) return
+      } else if (this.isSelectMode) {
+        this.commitScalarValue()
+        return
       } else {
-        value = (this.draft || '').trim()
-        if (this.numeric && value !== '') {
-          const num = Number(value)
-          value = Number.isNaN(num) ? value : num
-        }
+        this.commitScalarValue()
+        return
       }
       setObjPathValue(this, this.obj, this.propName, value)
       this.editing = false
       this.draft = ''
       this.draftDate = null
+      this.draftBool = true
+      this.booleanSelectOpen = false
+      this.selectOpen = false
       this.$emit('change', value)
+    },
+    commitScalarValue() {
+      if (!this.editing || !this.pathValid) return
+      let value = (this.draft || '').trim()
+      if (value === '' && !this.isSelectMode) return
+      if (this.numeric && value !== '') {
+        const num = Number(value)
+        value = Number.isNaN(num) ? value : num
+      }
+      setObjPathValue(this, this.obj, this.propName, value)
+      this.editing = false
+      this.draft = ''
+      this.draftDate = null
+      this.draftBool = true
+      this.booleanSelectOpen = false
+      this.selectOpen = false
+      this.$emit('change', value)
+    },
+    commitSelect() {
+      if (!this.editing || !this.isSelectMode) return
+      this.commitScalarValue()
+    },
+    commitBoolean() {
+      if (!this.editing || !this.isBooleanMode) return
+      this.commit()
+    },
+    onSelectVisibleChange(visible) {
+      this.selectOpen = visible
+    },
+    onSelectBlur() {
+      window.setTimeout(() => {
+        if (this.editing && this.isSelectMode && !this.selectOpen) {
+          this.commitScalarValue()
+        }
+      }, 200)
+    },
+    onBooleanSelectVisibleChange(visible) {
+      this.booleanSelectOpen = visible
+    },
+    onBooleanSelectBlur() {
+      window.setTimeout(() => {
+        if (this.editing && this.isBooleanMode && !this.booleanSelectOpen) {
+          this.commit()
+        }
+      }, 200)
     },
     onDateChange(val) {
       if (!this.editing) return
@@ -325,6 +511,9 @@ export default {
       this.editing = false
       this.draft = ''
       this.draftDate = null
+      this.draftBool = true
+      this.booleanSelectOpen = false
+      this.selectOpen = false
     },
   },
 }
@@ -347,10 +536,24 @@ export default {
   box-sizing: border-box;
 }
 
+.double-click-to-input--array > span {
+  display: block;
+  width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .double-click-to-input--array .double-click-to-input__display {
   display: block;
   width: 100%;
   white-space: pre-wrap;
+}
+
+.double-click-to-input__display-readonly {
+  display: block;
+  width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .double-click-to-input__display {
@@ -403,6 +606,16 @@ export default {
     font-size: 12px;
     line-height: 1.5;
     resize: vertical;
+  }
+}
+
+.double-click-to-input__select {
+  min-width: 120px;
+  vertical-align: middle;
+
+  ::v-deep .el-input__inner {
+    color: #409eff;
+    border-color: #409eff;
   }
 }
 

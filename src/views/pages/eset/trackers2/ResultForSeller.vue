@@ -87,7 +87,8 @@
           <el-table :data="materialFee" border style="width: 1200px">
             <el-table-column type="index" label="序号" width="50" :index="indexMethod"></el-table-column>
             <el-table-column prop="name" label="材料名称" width="100"></el-table-column>
-            <el-table-column prop="totalPrice" label="总价(RMB 元)" width="200" :formatter="formatNumber2"></el-table-column>
+            <el-table-column prop="totalPrice" label="总价(RMB 元)" width="200"
+              :formatter="formatNumber2"></el-table-column>
             <el-table-column prop="pricePerWatt" label="瓦单价" width="200" :formatter="formatNumber6"></el-table-column>
             <el-table-column prop="totalWeight" label="总重(kg)" width="200" :formatter="formatNumber2"></el-table-column>
             <el-table-column prop="tonPerMw" label="兆瓦吨重" width="200" :formatter="formatNumber6"></el-table-column>
@@ -99,7 +100,8 @@
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
-            <span style="margin-left: 8px; font-weight: bold;">非材料费(运费、服务费等) Non-material costs(transportation costs, service costs, etc.)</span>
+            <span style="margin-left: 8px; font-weight: bold;">非材料费(运费、服务费等) Non-material costs(transportation costs,
+              service costs, etc.)</span>
           </div>
         </template>
         <h3>汇率换算</h3>
@@ -153,7 +155,7 @@
                 <el-option label="整运" value="container"></el-option>
               </el-select>
             </el-form-item>
-            <el-form-item label="运费单价" style="margin-left: 20px">
+            <el-form-item label="" style="margin-left: 0px">
               <el-input v-show="psd.method === 'bulk'" v-model="psd.bulk_unit_price" placeholder="每吨运费单价"
                 style="width:80px;" size="mini"></el-input>
               <el-input v-show="psd.method === 'container'" v-model="psd.container_unit_price" placeholder="每集装箱运费单价"
@@ -203,7 +205,7 @@
 
         </div>
         <h3>其它费用</h3>
-        <div class="fee-div">
+        <div class="fee-div fee-div--has-save-btn">
           <el-form class="other-fee-form" label-width="120px">
             <el-form-item label="安装指导费">
               <el-switch v-model="form.guide_fee_switch" active-text="有" inactive-text="无">
@@ -211,7 +213,11 @@
               <el-input v-show="form.guide_fee_switch" v-model="form.guide_fee" placeholder="安装指导费"
                 style="width:80px; margin-left: 10px" size="mini"></el-input>
               <span v-show="form.guide_fee_switch" class="other-fee-form__unit">($/day)</span>
-              <span v-show="form.guide_fee_switch" class="other-fee-form__hint">共{{ form.guide_days }}天</span>
+              <el-input v-show="form.guide_fee_switch" v-model="form.guide_days" placeholder="安装指导费"
+                style="width:80px; margin-left: 10px" size="mini"></el-input>
+              <span v-show="form.guide_fee_switch" class="other-fee-form__hint">天</span>
+              <span v-show="form.guide_fee_switch" class="other-fee-form__hint">建议服务天数:{{
+                getDayOfService(planResult.planCapacity) }} </span>
             </el-form-item>
             <el-form-item label="保函和财务费">
               <el-switch v-model="form.guarantee_and_financial_fees_switch" active-text="有" inactive-text="无">
@@ -228,6 +234,7 @@
               <span v-show="form.other_additional_fees_switch" class="other-fee-form__unit">(¥)</span>
             </el-form-item>
           </el-form>
+          <el-button class="fee-div__save-btn" type="primary" size="mini" @click="saveFormInfo">保存输入信息</el-button>
         </div>
       </el-collapse-item>
       <el-collapse-item name="4">
@@ -239,25 +246,52 @@
         </template>
         <h3>毛利率与运输条款</h3>
         <div class="basic-price-table-wrap" style="width: 1600px">
+          <div class="basic-price-filters">
+            <span class="basic-price-filters__label">货币</span>
+            <el-select
+              v-model="basicPriceCurrencyFilter"
+              multiple
+              placeholder="请选择货币"
+              size="small"
+              class="basic-price-filters__select"
+              @change="onBasicPriceCurrencyFilterChange"
+            >
+              <el-option
+                v-for="item in basicPriceCurrencyOptions"
+                :key="item"
+                :label="item"
+                :value="item"
+              />
+            </el-select>
+            <span class="basic-price-filters__label">贸易术语</span>
+            <el-select
+              v-model="basicPriceTermFilter"
+              multiple
+              placeholder="请选择贸易术语"
+              size="small"
+              class="basic-price-filters__select"
+              @change="onBasicPriceTermFilterChange"
+            >
+              <el-option
+                v-for="item in basicPriceTermOptions"
+                :key="item"
+                :label="item"
+                :value="item"
+              />
+            </el-select>
+          </div>
           <el-table ref="basicPriceTable" height="600px" :data="basicPrice" border stripe size="small"
-            style="width: 1200px" :row-class-name="basicPriceRowClassName" @cell-mouse-enter="onBasicPriceRowEnter"
-            @cell-mouse-leave="onBasicPriceRowLeave">
+            :style="{ width: basicPriceTableWidth + 'px' }" :row-class-name="basicPriceRowClassName"
+            @cell-mouse-enter="onBasicPriceRowEnter" @cell-mouse-leave="onBasicPriceRowLeave">
             <el-table-column prop="margin" label="Margin" width="80px" fixed="left"></el-table-column>
-            <el-table-column prop="rmb_exw" label="rmb_exw" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="rmb_fob" label="rmb_fob" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="rmb_cif" label="rmb_cif" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="rmb_dap" label="rmb_dap" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="rmb_ddp" label="rmb_ddp" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="usd_exw" label="usd_exw" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="usd_fob" label="usd_fob" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="usd_cif" label="usd_cif" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="usd_dap" label="usd_dap" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="usd_ddp" label="usd_ddp" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="eur_exw" label="eur_exw" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="eur_fob" label="eur_fob" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="eur_cif" label="eur_cif" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="eur_dap" label="eur_dap" width="90px" :formatter="formatNumber4"></el-table-column>
-            <el-table-column prop="eur_ddp" label="eur_ddp" width="90px" :formatter="formatNumber4"></el-table-column>
+            <el-table-column
+              v-for="col in basicPriceVisibleColumns"
+              :key="col.prop"
+              :prop="col.prop"
+              :label="col.label"
+              width="90px"
+              :formatter="formatNumber4"
+            ></el-table-column>
           </el-table>
           <transition name="el-fade-in-linear">
             <div v-show="basicPriceRowTip.visible" class="basic-price-row-tip" :class="{
@@ -297,40 +331,20 @@
                     <th class="basic-price-row-tip__table-term">{{ term }}</th>
                     <td v-for="cur in basicPriceTipCurrencies" :key="cur.key + term"
                       class="basic-price-row-tip__table-cell">{{ formatBasicPriceTipValue(basicPriceRowTip.row, cur.key,
-                      term) }}</td>
+                        term) }}</td>
                   </tr>
                 </tbody>
               </table>
               <div class="basic-price-row-tip__margin" @mousedown.stop @click.stop>
                 <span class="basic-price-row-tip__margin-label">利润率</span>
-                <el-input-number
-                  v-model="basicPriceRowTipMarginInput"
-                  size="mini"
-                  :step="0.01"
-                  :precision="2"
-                  :min="0"
-                  :max="99.99"
-                  controls-position="right"
-                  class="basic-price-row-tip__margin-input"
-                  @change="onBasicPriceRowTipMarginChange"
-                />
+                <el-input-number v-model="basicPriceRowTipMarginInput" size="mini" :step="0.01" :precision="2" :min="0"
+                  :max="99.99" controls-position="right" class="basic-price-row-tip__margin-input"
+                  @change="onBasicPriceRowTipMarginChange" />
                 <span class="basic-price-row-tip__margin-unit">%</span>
-                <el-button
-                  type="primary"
-                  size="mini"
-                  icon="el-icon-refresh"
-                  class="basic-price-row-tip__refresh-btn"
-                  title="刷新计算"
-                  @click.stop="refreshBasicPriceRowTip"
-                >刷新</el-button>
-                <el-button
-                  type="success"
-                  size="mini"
-                  icon="el-icon-document"
-                  class="basic-price-row-tip__quotation-btn"
-                  title="生成报价单"
-                  @click.stop="openQuotationReportDrawer"
-                >生成报价单</el-button>
+                <el-button type="primary" size="mini" icon="el-icon-refresh" class="basic-price-row-tip__refresh-btn"
+                  title="刷新计算" @click.stop="refreshBasicPriceRowTip">刷新</el-button>
+                <el-button type="success" size="mini" icon="el-icon-document" class="basic-price-row-tip__quotation-btn"
+                  title="生成报价单" @click.stop="openQuotationReportDrawer">生成报价单</el-button>
               </div>
             </div>
           </transition>
@@ -352,15 +366,8 @@
 
     </el-collapse>
 
-    <el-drawer
-      title="报价单"
-      :visible.sync="quotationReportDrawerVisible"
-      direction="btt"
-      size="90%"
-      append-to-body
-      :destroy-on-close="false"
-      custom-class="result-for-seller__quotation-drawer"
-    >
+    <el-drawer title="报价单" :visible.sync="quotationReportDrawerVisible" direction="btt" size="90%" append-to-body
+      :destroy-on-close="false" custom-class="result-for-seller__quotation-drawer">
       <div class="result-for-seller__quotation-scroll">
         <seller-tool-quotation :quotation-parent="quotation" />
       </div>
@@ -372,6 +379,7 @@
 
 <script>
 import { getToken } from '@/utils/auth'
+import { getInfo } from '@/api/user'
 import { mapGetters } from 'vuex'
 import { Quotation } from '@/views/pages/eset/trackers2/utils/classQuotation'
 import SellerToolQuotation from '@/views/pages/eset/components/SellerTool/SellerToolQuotation.vue'
@@ -383,7 +391,7 @@ export default {
   },
   data() {
     return {
-      activeNames: ['3','4'],
+      activeNames: ['3', '4'],
       form: {},
       exchangeRateLoading: false,
       headTitlePos: { left: 0, top: 600 },
@@ -395,6 +403,12 @@ export default {
         originTop: 0
       },
       headTitleMinimized: false,
+      basicPriceCurrencyOptions: ['全部', '美元', '欧元', '人民币'],
+      basicPriceTermOptions: ['全部', 'EXW', 'FOB', 'CIF', 'DAP', 'DDP'],
+      basicPriceCurrencyFilter: ['全部'],
+      basicPriceTermFilter: ['全部'],
+      _basicPriceCurrencyFilterPrev: ['全部'],
+      _basicPriceTermFilterPrev: ['全部'],
       basicPriceTipTerms: ['exw', 'fob', 'cif', 'dap', 'ddp'],
       basicPriceTipCurrencies: [
         { key: 'rmb', label: 'RMB(人民币)' },
@@ -470,11 +484,157 @@ export default {
         marginTable.push(this.getBasicPriceByMargin(margin))
       }
       return marginTable
+    },
+    basicPriceAllColumns() {
+      const currencies = ['rmb', 'usd', 'eur']
+      const terms = ['exw', 'fob', 'cif', 'dap', 'ddp']
+      return currencies.flatMap(cur =>
+        terms.map(term => ({
+          prop: `${cur}_${term}`,
+          label: `${cur}_${term}`
+        }))
+      )
+    },
+    basicPriceVisibleColumns() {
+      return this.basicPriceAllColumns.filter(col => {
+        const [cur, term] = col.prop.split('_')
+        return this.isBasicPriceCurrencyVisible(cur) && this.isBasicPriceTermVisible(term)
+      })
+    },
+    basicPriceTableWidth() {
+      return 80 + this.basicPriceVisibleColumns.length * 90
     }
   },
 
 
   methods: {
+    /**
+     * 「全部」与其它项互斥：仅「全部」= 不过滤；选其它项则去掉「全部」；空选则回到「全部」
+     */
+    normalizeExclusiveAllFilter(val, prev) {
+      const ALL = '全部'
+      if (!val || val.length === 0) return [ALL]
+
+      const hasAll = val.includes(ALL)
+      const specifics = val.filter(item => item !== ALL)
+
+      if (!hasAll) return specifics.length ? specifics : [ALL]
+      if (specifics.length === 0) return [ALL]
+
+      const prevWasOnlyAll = prev && prev.length === 1 && prev[0] === ALL
+      return prevWasOnlyAll ? specifics : [ALL]
+    },
+    onBasicPriceCurrencyFilterChange(val) {
+      const normalized = this.normalizeExclusiveAllFilter(val, this._basicPriceCurrencyFilterPrev)
+      this.basicPriceCurrencyFilter = normalized
+      this._basicPriceCurrencyFilterPrev = [...normalized]
+    },
+    onBasicPriceTermFilterChange(val) {
+      const normalized = this.normalizeExclusiveAllFilter(val, this._basicPriceTermFilterPrev)
+      this.basicPriceTermFilter = normalized
+      this._basicPriceTermFilterPrev = [...normalized]
+    },
+    isBasicPriceCurrencyVisible(curKey) {
+      const labelMap = { rmb: '人民币', usd: '美元', eur: '欧元' }
+      const selected = this.basicPriceCurrencyFilter
+      if (!selected.length || selected.includes('全部')) return true
+      return selected.includes(labelMap[curKey])
+    },
+    isBasicPriceTermVisible(termKey) {
+      const labelMap = { exw: 'EXW', fob: 'FOB', cif: 'CIF', dap: 'DAP', ddp: 'DDP' }
+      const selected = this.basicPriceTermFilter
+      if (!selected.length || selected.includes('全部')) return true
+      return selected.includes(labelMap[termKey])
+    },
+    //保存报价信息
+    saveFormInfo() {
+      fetch(process.env.VUE_APP_BASE_API + '/api/saveShippingInfo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        }, 
+        body: JSON.stringify({
+          username: this.name,
+          project_code: this.projectAndPlan.project_code,
+          project_name: this.projectAndPlan.project_name,
+          plan_code: this.projectAndPlan.plan_code,
+          plan_description: this.projectAndPlan.plan_description,
+          info: JSON.stringify(this.form),
+        })
+      })
+        .then(response => {
+          if (response.ok) {
+            return response.json()
+          }
+          throw new Error('服务器响应异常')
+        })
+        .then(r => {
+          if (r && r.code === 200) {
+            this.$message.success('保存成功')
+          } else {
+            this.$message.error((r && r.message) || '保存失败')
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error)
+          this.$message.error(error.message || '保存失败，请稍后重试')
+        })
+    },
+
+    //获取之前保存的报价信息
+    getFormInfo() {
+      fetch(process.env.VUE_APP_BASE_API + '/api/getShippingInfo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+        }, 
+        body: JSON.stringify({
+          username: this.name,
+          plan_code: this.projectAndPlan.plan_code
+        })
+      })
+        .then(response => {
+          // 确保服务器响应为成功状态码
+          if (response.ok) {
+            // 获取响应体中的JSON数据
+            return response.json()
+          } else {
+            // 如果响应状态码不是2xx，抛出错误
+            throw new Error('Something went wrong on server side.')
+          }
+        }).then(r => {
+          const list = r && r.data
+          const success = r && r.code === 200 && Array.isArray(list) && list.length >= 1
+          if (success) {
+            const rawInfo = list[0].info
+            if (rawInfo != null && rawInfo !== '') {
+              try {
+                if (typeof rawInfo === 'object') {
+                  this.form = rawInfo
+                  return
+                }
+                // 单引号 → 双引号，转为标准 JSON 再解析
+                const jsonStr = String(rawInfo).trim().replace(/'/g, '"')
+                const parsed = JSON.parse(jsonStr)
+                if (parsed && typeof parsed === 'object') {
+                  this.form = parsed
+                  return
+                }
+              } catch (e) {
+                console.error('解析 info JSON 失败:', e, rawInfo)
+              }
+            }
+          }
+          this.initForm(this.planResult)
+        })
+        .catch(error => {
+          console.error('Error:', error)
+          this.initForm(this.planResult)
+        })
+    },
+
     //通过毛利率计算各价格
     getBasicPriceByMargin(margin) {
       const processSite = this.form && this.form.process_site
@@ -538,7 +698,7 @@ export default {
         eur_dap: rmb_dap / (capacity * eur),
         eur_ddp: rmb_ddp / (capacity * eur),
       }
-       // console.log('总容量', capacity)
+      // console.log('总容量', capacity)
       // console.log('材料总价', material_cost)
       // console.log('国内运费', delivery_process_site)
       // console.log('海上运费', delivery_sea)
@@ -790,37 +950,23 @@ export default {
       const exp = Math.floor(Math.log10(Math.abs(n)))
       return n.toFixed(Math.max(0, digits - 1 - exp))
     },
-    //初始化要输入内容
+    // 初始化要输入内容（无 planResult 时 process_site 为空、guide_days 为 0；汇率由 getExchangeRate 拉取）
     initForm(planResult) {
-      if (!planResult || typeof planResult !== 'object') {
-        this.form = {
-          exchange_rate_usd: 6.823,
-          exchange_rate_eur: 7.9816,
-          exchange_rate_handling_fee: 1.5,
-          guide_fee: 200,
-          guide_days: 25,
-          guarantee_and_financial_fees: 0,
-          other_additional_fees: 0,
-          guide_fee_switch: true,
-          guarantee_and_financial_fees_switch: true,
-          other_additional_fees_switch: true,
-          process_site: []
-        }
-        return
-      }
+      const hasPlan = planResult && typeof planResult === 'object'
       this.form = {
-        exchange_rate_usd: 6.823,
-        exchange_rate_eur: 7.9816,
+        exchange_rate_usd: '',
+        exchange_rate_eur: '',
         exchange_rate_handling_fee: 1.5,
-        guide_fee: 200,
-        guide_days: this.getDayOfService(planResult.planCapacity),
+        guide_fee: 250,
+        guide_days: hasPlan ? this.getDayOfService(planResult.planCapacity) : 0,
         guarantee_and_financial_fees: 0,
         other_additional_fees: 0,
         guide_fee_switch: true,
         guarantee_and_financial_fees_switch: true,
         other_additional_fees_switch: true,
-        process_site: this.getProcessSiteInfo(planResult)
+        process_site: hasPlan ? this.getProcessSiteInfo(planResult) : []
       }
+      this.getExchangeRate()
     },
     //获取按生地和货种区分的材料费和重量
     materialFeeAndWeight(plan) {
@@ -934,38 +1080,46 @@ export default {
       })
       return r
     },
-    /**
-     * 获取美元和欧元即期汇率的现汇买入价
-     * @returns {Promise<void>}
-     */
-    getExchangeRate() {
-      this.exchangeRateLoading = true
-      fetch(process.env.VUE_APP_BASE_API + '/api/getExchange', {
+    /** 请求接口并解析美元、欧元汇率 */
+    fetchExchangeRates() {
+      return fetch(process.env.VUE_APP_BASE_API + '/api/getExchange', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'token': getToken()// 添加Authorization字段，使用Bearer认证方式
+          'token': getToken()
         },
         body: {}
       })
         .then(response => {
-          // 确保服务器响应为成功状态码
           if (response.ok) {
-            // 获取响应体中的JSON数据
             return response.json()
-          } else {
-            // 如果响应状态码不是2xx，抛出错误
-            throw new Error('Something went wrong on server side.')
           }
+          throw new Error('Something went wrong on server side.')
         })
         .then(r => {
-          let rates = r.data.replace('}', ',}')
-          this.form.exchange_rate_usd = (rates.split('usd:')[1].split(',')[0] / 100).toFixed(4)
-          this.form.exchange_rate_eur = (rates.split('eur:')[1].split(',')[0] / 100).toFixed(4)
-          this.exchangeRateLoading = false
+          const rates = r.data.replace('}', ',}')
+          return {
+            exchange_rate_usd: (rates.split('usd:')[1].split(',')[0] / 100).toFixed(4),
+            exchange_rate_eur: (rates.split('eur:')[1].split(',')[0] / 100).toFixed(4)
+          }
+        })
+    },
+    /**
+     * 获取美元和欧元即期汇率的现汇买入价（initForm / 刷新按钮共用）
+     * @returns {Promise<void>|undefined}
+     */
+    getExchangeRate() {
+      if (!this.form || typeof this.form !== 'object') return
+      this.exchangeRateLoading = true
+      return this.fetchExchangeRates()
+        .then(({ exchange_rate_usd, exchange_rate_eur }) => {
+          this.form.exchange_rate_usd = exchange_rate_usd
+          this.form.exchange_rate_eur = exchange_rate_eur
         })
         .catch(error => {
           console.error('Error:', error)
+        })
+        .finally(() => {
           this.exchangeRateLoading = false
         })
     },
@@ -1073,8 +1227,9 @@ export default {
     }
   },
   mounted() {
-    this.initForm(this.planResult)
+    // this.initForm(this.planResult)
     this.initHeadTitlePosition()
+    this.getFormInfo()
     window.addEventListener('resize', this.onHeadTitleViewportResize)
   },
   beforeDestroy() {
@@ -1126,6 +1281,19 @@ export default {
   border-left: 4px solid #409EFF;
   /* 左侧蓝色条，起到视觉强调作用 */
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.fee-div--has-save-btn {
+  position: relative;
+  padding-bottom: 72px;
+}
+
+.fee-div__save-btn {
+  position: absolute;
+  right: 20px;
+  bottom: 30px;
+  margin: 0;
+  z-index: 1;
 }
 
 /* 汇率区两个 mini 按钮等高对齐 */
@@ -1460,6 +1628,23 @@ export default {
 }
 
 /* 毛利率表行悬停详情 */
+.basic-price-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.basic-price-filters__label {
+  font-size: 13px;
+  color: #606266;
+}
+
+.basic-price-filters__select {
+  width: 280px;
+}
+
 .basic-price-table-wrap {
   position: relative;
 }

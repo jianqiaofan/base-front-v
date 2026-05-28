@@ -149,7 +149,7 @@
       title="报价单"
       :visible.sync="quotationDrawerVisible"
       direction="btt"
-      size="90%"
+      size="95%"
       append-to-body
       :destroy-on-close="false"
       custom-class="tb-seller-tool__quotation-drawer"

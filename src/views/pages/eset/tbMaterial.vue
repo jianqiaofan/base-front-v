@@ -1,43 +1,63 @@
 <template>
   <div class="app-container">
     <div class="search-div">
-      <el-form label-width="70px" size="small">
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="名称">
-              <el-input v-model="searchObj.productName" placeholder="名称" clearable/>
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item label="材料分类" prop="productCategory">
-              <el-select v-model="searchObj.productCategory" clearable placeholder="请选择">
-                <el-option label="减速机" value="Drives System"></el-option>
-                <el-option label="控制系统" value="Control System"></el-option>
-                <el-option label="阻尼器" value="Damper"></el-option>
-                <el-option label="立柱" value="Post"></el-option>
-                <el-option label="主梁" value="Torque Tube"></el-option>
-                <el-option label="檩条" value="Purlin"></el-option>
-                <el-option label="冲压件" value="Stamping Parts"></el-option>
-                <el-option label="铸造件" value="Casting Part"></el-option>
-                <el-option label="紧固件" value="Fastners"></el-option>
-                <el-option label="气象通信站" value="Weather Station"></el-option>
-                <el-option label="其它" value="Other"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="4">
-            <el-form-item label="计价方式">
-              <el-input v-model="searchObj.pricingMethod" placeholder="计价方式" clearable/>
-            </el-form-item>
-          </el-col>
-
-        </el-row>
-        <el-row style="display:flex">
+      <el-form :inline="true" label-width="70px" size="small" class="material-search-form">
+        <el-form-item label="名称">
+          <el-input
+            v-model="searchObj.productName"
+            placeholder="名称"
+            clearable
+            class="material-search-form__control"
+          />
+        </el-form-item>
+        <el-form-item label="编号">
+          <el-input
+            v-model="searchObj.productCode"
+            placeholder="编号"
+            clearable
+            class="material-search-form__control"
+          />
+        </el-form-item>
+        <el-form-item label="材料分类" prop="productCategory">
+          <el-select
+            v-model="searchObj.productCategory"
+            clearable
+            placeholder="请选择"
+            class="material-search-form__control"
+          >
+            <el-option label="减速机" value="Drives System"></el-option>
+            <el-option label="控制系统" value="Control System"></el-option>
+            <el-option label="阻尼器" value="Damper"></el-option>
+            <el-option label="立柱" value="Post"></el-option>
+            <el-option label="主梁" value="Torque Tube"></el-option>
+            <el-option label="檩条" value="Purlin"></el-option>
+            <el-option label="冲压件" value="Stamping Parts"></el-option>
+            <el-option label="铸造件" value="Casting Part"></el-option>
+            <el-option label="紧固件" value="Fastners"></el-option>
+            <el-option label="气象通信站" value="Weather Station"></el-option>
+            <el-option label="其它" value="Other"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="计价方式">
+          <el-select
+            v-model="searchObj.pricingMethod"
+            clearable
+            filterable
+            placeholder="请选择"
+            class="material-search-form__control"
+          >
+            <el-option
+              v-for="item in pricing_options"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item class="material-search-form__actions">
           <el-button type="primary" icon="el-icon-search" size="mini" @click="fetchData()">搜索</el-button>
           <el-button icon="el-icon-refresh" size="mini" @click="resetData">重置</el-button>
-        </el-row>
+        </el-form-item>
       </el-form>
     </div>
     <!-- 工具条 -->
@@ -370,6 +390,19 @@ export default {
 }
 </script>
 <style scoped>
+.material-search-form ::v-deep .el-form-item {
+  margin-right: 12px;
+  margin-bottom: 8px;
+}
+
+.material-search-form__control {
+  width: 160px;
+}
+
+.material-search-form__actions ::v-deep .el-form-item__content {
+  margin-left: 0 !important;
+}
+
 .demo-table-expand {
   font-size: 0;
 }

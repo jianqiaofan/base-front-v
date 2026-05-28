@@ -320,7 +320,7 @@
     >
       <ResultForSeller
         :planResult="planResult"
-        :project-and-plan="projectAndPlanForSeller"
+        :projectAndPlan="projectAndPlanForSeller"
       ></ResultForSeller>
     </el-drawer>
 
@@ -418,7 +418,10 @@ export default {
         project_name: p.name || '',
         plan_description: plan.plan_description || '',
         seller: p.seller || '',
-        designer: plan.designer || p.designer || ''
+        designer: plan.designer || p.designer || '',
+        plan_code: plan.plan_code || '',
+        plan_capacity: plan.plan_capacity || '',
+        tester:'fdsa'
       }
     },
     //项目当前的状态

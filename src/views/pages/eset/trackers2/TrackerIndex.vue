@@ -457,15 +457,15 @@
         <tr v-show="t.showPostBeamTable">
           <!--          <td>t.trackBrifeName</td>-->
           <td colspan="12">
-
             <!--立柱明细表-->
             <div>
-              <table style="width: 840px;">
+              <table style="width: 900px;">
                 <thead>
                 <tr>
                   <td style="text-align: center; width:80px;">位置</td>
                   <td style="text-align: center; width:80px;">驱动</td>
                   <td style="text-align: center; width:80px;">截面</td>
+                  <td style="text-align: center; width:80px;">原始截面</td>
                   <td style="text-align: center; width:80px;">材质</td>
                   <td style="text-align: center; width:60px;">高度</td>
                   <td style="text-align: center; width:80px;">基础类型</td>
@@ -477,7 +477,23 @@
                 <tr v-for="p in t.post_info_lst" :key="p.position">
                   <td style="text-align: center;">{{ p.position|filterFix }}</td>
                   <td style="text-align: center;">{{ p.category }}</td>
-                  <td style="text-align: center;">{{ p.section }}</td>
+                  <td style="text-align: center;">
+                    <select v-model="p.section" style="width: 120px;">
+                      <option
+                        v-for="option in select_option.post_section_options"
+                        :key="option.value"
+                        :value="option.value"
+                      >
+                        {{ option.text }}
+                      </option>
+                    </select>
+                  </td>
+                  <td
+                    style="text-align: center;"
+                    :class="{ 'section-origin--modified': isSectionModified(p.section, p.origin_section) }"
+                  >
+                    {{ p.origin_section }}
+                  </td>
                   <td style="text-align: center;">{{ p.material }}</td>
                   <td style="text-align: center;">{{ p.height }}</td>
                   <td style="text-align: center;">
@@ -489,9 +505,7 @@
                       </option>
                     </select>
                   </td>
-
                   <td style="text-align: left;">{{ p.pile_desc }}</td>
-
                 </tr>
                 </tbody>
               </table>
@@ -500,12 +514,13 @@
           <td colspan="7" style="vertical-align: top">
             <!--主梁明细表-->
             <div>
-              <table style="width: 600px;">
+              <table style="width: 900px;">
                 <thead>
                 <tr>
                   <td style="width:80px;">起点</td>
                   <td style="width:80px;">终点</td>
                   <td style="width:166px;">截面</td>
+                  <td style="width:166px;">原始截面</td>
                   <td style="width:80px;">材质</td>
                   <td style="width:60px;">长度</td>
                   <td>类别</td>
@@ -515,7 +530,20 @@
                 <tr v-for="b in t.beam_info_lst" :key="b.start">
                   <td>{{ b.start|filterFix }}</td>
                   <td>{{ b.end|filterFix }}</td>
-                  <td>{{ b.section }}</td>
+                  <td>
+                    <select v-model="b.section" style="width: 156px;">
+                      <option
+                        v-for="option in getBeamSectionOptions(b.origin_section, b.section)"
+                        :key="option.value"
+                        :value="option.value"
+                      >
+                        {{ option.text }}
+                      </option>
+                    </select>
+                  </td>
+                  <td :class="{ 'section-origin--modified': isSectionModified(b.section, b.origin_section) }">
+                    {{ b.origin_section }}
+                  </td>
                   <td>{{ b.material }}</td>
                   <td>{{ b.length }}</td>
                   <td style="text-align: center;">{{ b.category }}</td>
@@ -713,40 +741,157 @@
         </tbody>
       </table>
 
-      <div class="summary" v-if="this.newModuleData.planTrice>0">
-        <!--        <SummaryPlan :summaryData="summaryData"></SummaryPlan>-->
-        <h2>Summary Result</h2>
-        <el-table
-          :data="this.newModuleData.summaryData"
-          border
-          style="width: 1800px"
-        >
-          <el-table-column type="index" label="序号" width="50" :index="indexMethod"></el-table-column>
-          <el-table-column prop="trackBrifeName" label="型号"></el-table-column>
-          <el-table-column prop="trackerNum" label="数量(套)" width="100"></el-table-column>
-          <el-table-column prop="trackerNumRatio" label="占比%" width="100" :formatter="formatNumber3"
-          ></el-table-column>
-          <el-table-column prop="trackerWeight" label="单套重量(kg)" width="120" :formatter="formatNumber3"
-          ></el-table-column>
-          <el-table-column prop="trackerCapacity" label="容量(kW)" width="130" :formatter="formatNumber3"
-          ></el-table-column>
-          <el-table-column prop="trackerTotalWeight" label="总重量(kg)" width="160" :formatter="formatNumber3"
-          ></el-table-column>
-          <el-table-column prop="trackerTotalCapacity" label="总容量(kW)" width="150" :formatter="formatNumber3"
-          ></el-table-column>
-          <el-table-column prop="trackerPrice" label="单套价格" width="100" :formatter="formatNumber2"
-          ></el-table-column>
-          <el-table-column prop="trackerTotalPrice" label="总价格" width="160" :formatter="formatNumber2"
-          ></el-table-column>
-          <el-table-column prop="pricePerWatt" label="瓦单价" width="100" :formatter="formatNumber6"></el-table-column>
-          <el-table-column prop="trackerPriceSpare" label="单套价格(含)" width="120" :formatter="formatNumber2"
-          ></el-table-column>
-          <el-table-column prop="trackerTotalPriceSpare" label="总价格(含)" width="160" :formatter="formatNumber2"
-          ></el-table-column>
-          <el-table-column prop="pricePerWattSpare" label="瓦单价(含)" width="100" :formatter="formatNumber6"
-          ></el-table-column>
-        </el-table>
-        <p style="color: red">* (含) 表示此数据是含有备品备件的数据</p>
+      <div class="summary-plan-table" v-if="newModuleData.planTrice > 0">
+        <div class="summary-plan-table__head">
+          <i class="el-icon-s-data summary-plan-table__icon" aria-hidden="true"></i>
+          <h2 class="summary-plan-table__title">Summary Result</h2>
+          <span class="summary-plan-table__badge">{{ lgc ? '方案汇总' : 'Plan Summary' }}</span>
+        </div>
+        <div class="summary-plan-table__scroll">
+          <el-table
+            :data="newModuleData.summaryData"
+            border
+            stripe
+            size="small"
+            class="summary-plan-table__grid"
+            :row-class-name="summaryPlanRowClassName"
+          >
+            <el-table-column
+              type="index"
+              label="序号"
+              width="56"
+              align="center"
+              header-align="center"
+              fixed
+              :index="summaryPlanIndexMethod"
+            ></el-table-column>
+            <el-table-column label="基本信息" align="center" header-align="center">
+              <el-table-column
+                prop="trackBrifeName"
+                label="型号"
+                width="160"
+                show-overflow-tooltip
+                header-align="center"
+              ></el-table-column>
+              <el-table-column
+                prop="trackerNum"
+                label="数量(套)"
+                width="88"
+                align="center"
+                header-align="center"
+              ></el-table-column>
+              <el-table-column
+                prop="trackerNumRatio"
+                label="占比%"
+                width="80"
+                align="right"
+                header-align="center"
+                :formatter="formatNumber3"
+              ></el-table-column>
+            </el-table-column>
+            <el-table-column label="重量与容量" align="center" header-align="center">
+              <el-table-column
+                prop="trackerWeight"
+                label="单套重量(kg)"
+                width="110"
+                align="right"
+                header-align="center"
+                :formatter="formatNumber3"
+              ></el-table-column>
+              <el-table-column
+                prop="trackerCapacity"
+                label="容量(kW)"
+                width="96"
+                align="right"
+                header-align="center"
+                :formatter="formatNumber3"
+              ></el-table-column>
+              <el-table-column
+                prop="trackerTotalWeight"
+                label="总重量(kg)"
+                width="120"
+                align="right"
+                header-align="center"
+                :formatter="formatNumber3"
+              ></el-table-column>
+              <el-table-column
+                prop="trackerTotalCapacity"
+                label="总容量(kW)"
+                width="110"
+                align="right"
+                header-align="center"
+                :formatter="formatNumber3"
+              ></el-table-column>
+            </el-table-column>
+            <el-table-column label="价格（不含备品）" align="center" header-align="center">
+              <el-table-column
+                prop="trackerPrice"
+                label="单套价格"
+                width="100"
+                align="right"
+                header-align="center"
+                :formatter="formatNumber2"
+              ></el-table-column>
+              <el-table-column
+                prop="trackerTotalPrice"
+                label="总价格"
+                width="120"
+                align="right"
+                header-align="center"
+                :formatter="formatNumber2"
+              ></el-table-column>
+              <el-table-column
+                prop="pricePerWatt"
+                label="瓦单价"
+                width="96"
+                align="right"
+                header-align="center"
+                :formatter="formatNumber6"
+              ></el-table-column>
+            </el-table-column>
+            <el-table-column
+              label="价格（含备品备件）"
+              align="center"
+              header-align="center"
+              label-class-name="summary-plan-table__group-spare"
+            >
+              <el-table-column
+                prop="trackerPriceSpare"
+                label="单套价格"
+                width="100"
+                align="right"
+                header-align="center"
+                header-class-name="summary-plan-table__header-spare summary-plan-table__header-spare-first"
+                class-name="summary-plan-table__cell-spare summary-plan-table__cell-spare-first"
+                :formatter="formatNumber2"
+              ></el-table-column>
+              <el-table-column
+                prop="trackerTotalPriceSpare"
+                label="总价格"
+                width="120"
+                align="right"
+                header-align="center"
+                header-class-name="summary-plan-table__header-spare"
+                class-name="summary-plan-table__cell-spare"
+                :formatter="formatNumber2"
+              ></el-table-column>
+              <el-table-column
+                prop="pricePerWattSpare"
+                label="瓦单价"
+                width="96"
+                align="right"
+                header-align="center"
+                header-class-name="summary-plan-table__header-spare"
+                class-name="summary-plan-table__cell-spare"
+                :formatter="formatNumber6"
+              ></el-table-column>
+            </el-table-column>
+          </el-table>
+        </div>
+        <p class="summary-plan-table__note">
+          <i class="el-icon-warning-outline" aria-hidden="true"></i>
+          {{ lgc ? '「含备品」列表示含有备品备件的数据' : 'Columns under “含备品” include spare parts' }}
+        </p>
       </div>
 
       <el-divider></el-divider>
@@ -1088,6 +1233,24 @@ export default {
 
       //选择框选项
       select_option: {
+        post_section_options: [
+          { text: 'W6X10', value: 'W6X10' },
+          { text: 'W6X11', value: 'W6X11' },
+          { text: 'W6X12', value: 'W6X12' },
+          { text: 'W6X15', value: 'W6X15' },
+          { text: 'W6X6.2', value: 'W6X6.2' },
+          { text: 'W6X7', value: 'W6X7' },
+          { text: 'W6X8', value: 'W6X8' },
+          { text: 'W6X8.5', value: 'W6X8.5' },
+          { text: 'W6X9', value: 'W6X9' },
+          { text: 'W8X10', value: 'W8X10' },
+          { text: 'W8X13', value: 'W8X13' },
+          { text: 'W8X15', value: 'W8X15' },
+          { text: 'W8X18', value: 'W8X18' },
+          { text: 'W8X21', value: 'W8X21' },
+          { text: 'W8X24', value: 'W8X24' },
+          { text: 'W8X8', value: 'W8X8' }
+        ],
         corrosion_proofing_grade_options: [
           { text: 'C3', value: 'C3' },
           { text: 'C4', value: 'C4' },
@@ -1831,12 +1994,6 @@ export default {
       apiTracker.getTextFileContent(file).then(content => {
         content = content.replace('cal_option.ui_option', 'cal_option_ui_option')
         const cntObj = JSON.parse(content)  //转为对象
-        // console.log("ui_model_info",cntObj.ui_model_info)
-        // console.log("paras_table",cntObj.paras_table)
-        // console.log("Exterior",cntObj.model_dict.Exterior)
-        // console.log("Edge",cntObj.model_dict.Edge)
-        // console.log("Interior",cntObj.model_dict.Interior)
-        // console.log("cal_option.ui_option",cntObj.cal_option_ui_option)
 
         if (content.includes('ui_model_info') && content.includes('model_dict')) {
           let initInfo = this.initDefault  //初始默认数据
@@ -1859,6 +2016,8 @@ export default {
               apiTracker.trackStr2Obj(fileName, 'Interior', ui_model_info, model_dict.Interior, initInfo)  //生成一个完整支架的计算输入文件
             )
           }
+
+          this.normalizePlanSections(this.module_data)
 
           //console.log('@', this.module_data.trackersInfo.trackersInfo)
         } else {
@@ -2306,7 +2465,76 @@ export default {
         }
         plan.trackersInfo[i] = t
       }
+      this.normalizePlanSections(plan)
       return plan
+    },
+    isPostOriginSectionValid(originSection) {
+      if (originSection === undefined || originSection === null || String(originSection).trim() === '') {
+        return false
+      }
+      return /\d/.test(String(originSection))
+    },
+    isBeamOriginSectionValid(originSection) {
+      if (!originSection) return false
+      return /^(.*x)(\d+(?:\.\d+)?)$/i.test(String(originSection).trim())
+    },
+    normalizeSectionOrigin(item, kind) {
+      if (!item || !item.section) return
+      const valid = kind === 'beam'
+        ? this.isBeamOriginSectionValid(item.origin_section)
+        : this.isPostOriginSectionValid(item.origin_section)
+      if (!valid) {
+        item.origin_section = item.section
+      }
+    },
+    normalizeTrackerSections(tracker) {
+      if (!tracker) return
+      ;(tracker.post_info_lst || []).forEach((p) => this.normalizeSectionOrigin(p, 'post'))
+      ;(tracker.beam_info_lst || []).forEach((b) => this.normalizeSectionOrigin(b, 'beam'))
+    },
+    normalizePlanSections(plan) {
+      if (!plan || !plan.trackersInfo) return
+      plan.trackersInfo.forEach((t) => this.normalizeTrackerSections(t))
+    },
+    isSectionModified(section, originSection) {
+      if (!section || !originSection) return false
+      return String(section) !== String(originSection)
+    },
+    summaryPlanRowClassName({ row }) {
+      if (row && row.trackBrifeName === '合计') {
+        return 'summary-plan-table__row-total'
+      }
+      return ''
+    },
+    summaryPlanIndexMethod(index) {
+      const rows = this.newModuleData && this.newModuleData.summaryData
+      if (rows && rows[index] && rows[index].trackBrifeName === '合计') {
+        return '—'
+      }
+      return index + 1
+    },
+    /** 主梁截面：以 origin_section 末尾数值为基准，±0.5 步进 0.1 */
+    getBeamSectionOptions(originSection, currentSection) {
+      const deltas = [-0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5]
+      const fallback = currentSection || originSection
+      if (!originSection) {
+        return fallback ? [{ text: fallback, value: fallback }] : []
+      }
+      const match = String(originSection).match(/^(.*x)(\d+(?:\.\d+)?)$/i)
+      if (!match) {
+        return [{ text: originSection, value: originSection }]
+      }
+      const prefix = match[1]
+      const base = parseFloat(match[2])
+      const options = deltas.map((delta) => {
+        const num = Math.round((base + delta) * 10) / 10
+        const value = prefix + num.toFixed(1)
+        return { text: value, value }
+      })
+      if (currentSection && !options.some((o) => o.value === currentSection)) {
+        options.push({ text: currentSection, value: currentSection })
+      }
+      return options
     },
     indexMethod(index) {
       return index + 1
@@ -2584,6 +2812,142 @@ th, td {
 
 .el-radio {
   margin: 0 16px 0;
+}
+
+.section-origin--modified {
+  color: #f56c6c;
+  font-weight: 600;
+}
+
+/* 方案汇总表：重点 = 标题区 + 含备品列（暖色） */
+.summary-plan-table {
+  margin: 16px 10px 8px;
+}
+
+.summary-plan-table__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  background: linear-gradient(105deg, #fff7e6 0%, #fffbf5 38%, #ffffff 100%);
+  border: 1px solid #f5dab1;
+  border-left: 6px solid #e6a23c;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(230, 162, 60, 0.18);
+}
+
+.summary-plan-table__icon {
+  font-size: 28px;
+  color: #e6a23c;
+}
+
+.summary-plan-table__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #c45606;
+  letter-spacing: 0.04em;
+}
+
+.summary-plan-table__badge {
+  margin-left: auto;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #a36109;
+  background: #fdebd0;
+  border: 1px solid #e6a23c;
+  border-radius: 6px;
+}
+
+.summary-plan-table__scroll {
+  overflow-x: auto;
+}
+
+.summary-plan-table__grid {
+  min-width: 1200px;
+}
+
+.summary-plan-table__grid ::v-deep .el-table th {
+  background: #f5f7fa;
+  color: #303133;
+  font-weight: 600;
+}
+
+.summary-plan-table__grid ::v-deep .el-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-plan-table__grid ::v-deep .el-table__body tr:hover > td:not(.summary-plan-table__cell-spare) {
+  background-color: #f5f7fa !important;
+}
+
+.summary-plan-table__grid ::v-deep th.summary-plan-table__group-spare {
+  background: linear-gradient(180deg, #f9d89a 0%, #f0c060 100%) !important;
+  color: #7c4a03 !important;
+  font-size: 14px;
+  font-weight: 700;
+  border-bottom: 2px solid #e6a23c !important;
+}
+
+.summary-plan-table__grid ::v-deep th.summary-plan-table__header-spare {
+  background: linear-gradient(180deg, #fde8c3 0%, #f5d49a 100%) !important;
+  color: #8a5a12 !important;
+  font-weight: 600;
+}
+
+.summary-plan-table__grid ::v-deep td.summary-plan-table__cell-spare {
+  background-color: #fff8eb;
+  font-weight: 500;
+}
+
+.summary-plan-table__grid ::v-deep td.summary-plan-table__cell-spare-first {
+  box-shadow: inset 4px 0 0 #e6a23c;
+}
+
+.summary-plan-table__grid ::v-deep th.summary-plan-table__header-spare-first {
+  box-shadow: inset 4px 0 0 #d48806;
+}
+
+.summary-plan-table__grid ::v-deep .el-table__body tr.el-table__row--striped td.summary-plan-table__cell-spare {
+  background-color: #ffefd5;
+}
+
+.summary-plan-table__grid ::v-deep .el-table__body tr:hover > td.summary-plan-table__cell-spare {
+  background-color: #ffe4b8 !important;
+}
+
+.summary-plan-table__grid ::v-deep tr.summary-plan-table__row-total > td {
+  font-weight: 700;
+  border-top: 2px solid #dcdfe6;
+}
+
+.summary-plan-table__grid ::v-deep tr.summary-plan-table__row-total > td.summary-plan-table__cell-spare {
+  background: linear-gradient(180deg, #ffe0a8 0%, #ffd080 100%) !important;
+  color: #7c4a03;
+  font-size: 14px;
+}
+
+.summary-plan-table__note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #a36109;
+  background: #fff8eb;
+  border: 1px solid #f5dab1;
+  border-left: 4px solid #e6a23c;
+  border-radius: 6px;
+}
+
+.summary-plan-table__note .el-icon-warning-outline {
+  font-size: 16px;
+  color: #e6a23c;
+  flex-shrink: 0;
 }
 
 
