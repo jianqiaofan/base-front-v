@@ -92,6 +92,101 @@
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
+            <span style="margin-left: 8px; font-weight: bold;">{{ tr('桩信息统计', 'Pile information statistics') }}</span>
+          </div>
+        </template>
+        <div class="summary-plan-table pile-info-table-wrap" style="margin-left: 20px">
+          <el-table
+            ref="pileInfoTable"
+            :data="pileInfoStatisticsDisplay"
+            border
+            stripe
+            class="summary-plan-table__grid"
+            style="width: 1800px"
+            :row-class-name="pileInfoRowClassName"
+            :cell-class-name="summaryPlanCellClassName"
+            @cell-mouse-enter="onPileInfoCellEnter"
+            @cell-mouse-leave="onPileInfoCellLeave"
+          >
+            <el-table-column type="index" :label="tr('序号', 'No.')" width="50" :index="indexMethod"></el-table-column>
+            <el-table-column prop="trackBrifeName" :label="tr('支架型号', 'Tracker type')" width="180px"></el-table-column>
+            <el-table-column prop="trackerNum" :label="tr('支架数量', 'Tracker quantity')" width="80px"></el-table-column>
+            <el-table-column prop="trackerPileType" :label="tr('桩类型', 'Pile type')" width="120px"></el-table-column>
+            <el-table-column prop="trackerPileNum" :label="tr('桩数量', 'Pile quantity')" width="80px"></el-table-column>
+            <el-table-column prop="trackerPileTotalNum" :label="tr('桩总数', 'Total pile number')" width="100px"></el-table-column>
+            <el-table-column
+              prop="trackerPileAverageDepth"
+              :label="tr('平均深度', 'Average depth')"
+              width="80px"
+              class-name="pile-info-col-plain"
+              label-class-name="pile-info-col-plain"
+              :formatter="formatInteger"
+            ></el-table-column>
+            <el-table-column
+              prop="trackerPileAveragePricePer10cm"
+              :label="tr('10厘米价格', 'Avg price / 10cm')"
+              width="120"
+              align="right"
+              header-align="center"
+              :formatter="formatFixed4"
+            ></el-table-column>
+            <el-table-column
+              column-key="pileDetail"
+              :label="tr('明细', 'Detail')"
+              width="80"
+              align="center"
+            >
+              <template slot-scope="{ row }">
+                <span
+                  v-if="!row.isPileInfoTotal && row.trackBrifeName !== '合计'"
+                  class="pile-detail-trigger"
+                >{{ tr('查看', 'View') }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+          <transition name="el-fade-in">
+            <div
+              v-show="pileDetailTip.visible"
+              class="pile-detail-tip"
+              :style="pileDetailTipStyle"
+              @mouseenter="cancelPileDetailTipHide"
+              @mouseleave="onPileDetailTipMouseLeave"
+            >
+              <div class="pile-detail-tip__title">
+                {{ pileDetailTip.row && pileDetailTip.row.trackBrifeName }}
+                — {{ tr('桩明细', 'Pile details') }}
+              </div>
+              <el-table
+                :data="pileDetailTip.list"
+                border
+                size="mini"
+                max-height="360"
+                class="pile-detail-tip__table"
+                empty-text="-"
+              >
+                <el-table-column prop="pile_type" :label="tr('桩类型', 'Pile type')" min-width="88" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="category" :label="tr('类别', 'Category')" width="72" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="position" :label="tr('位置', 'Position')" width="72" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="section" :label="tr('截面', 'Section')" min-width="100" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="material" :label="tr('材质', 'Material')" min-width="80" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="depth" :label="tr('深度', 'Depth')" width="72" align="right" :formatter="formatNumber2"></el-table-column>
+                <el-table-column prop="num" :label="tr('数量', 'Qty')" width="56" align="center"></el-table-column>
+                <el-table-column
+                  prop="pile_meter_price"
+                  :label="tr('米价', 'Price/m')"
+                  width="88"
+                  align="right"
+                  :formatter="formatFixed4"
+                ></el-table-column>
+              </el-table>
+            </div>
+          </transition>
+        </div>
+      </el-collapse-item>
+      <el-collapse-item name="3">
+        <template #title>
+          <div style="color: red; display: flex; align-items: center; font-size: 18px">
+            <i class="el-icon-info"></i> <!-- 图标 -->
             <span style="margin-left: 8px; font-weight: bold;">{{ tr('材料费', 'Material Cost') }}</span>
           </div>
         </template>
@@ -108,7 +203,7 @@
           </el-table>
         </div>
       </el-collapse-item>
-      <el-collapse-item name="3">
+      <el-collapse-item name="4">
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
@@ -154,7 +249,7 @@
               </span>
               <span>
                 <i class="el-icon-ship"></i> {{ tr('总货重', 'Total weight') }}：
-                <span class="value">{{ psd.goodTotalWeight / 1000 }}</span> {{ tr('吨', 't') }}
+                <span class="value">{{ psd.goodTotalWeight / 1000 }}</span> {{ tr('吨', 'ton') }}
               </span>
             </p>
           </el-form>
@@ -255,7 +350,7 @@
           <el-button class="fee-div__save-btn" type="primary" size="mini" @click="saveFormInfo">{{ tr('保存输入信息', 'Save') }}</el-button>
         </div>
       </el-collapse-item>
-      <el-collapse-item name="4">
+      <el-collapse-item name="5">
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
@@ -385,7 +480,6 @@
         <seller-tool-quotation :quotation-parent="quotation" />
       </div>
     </el-drawer>
-
   </div>
 
 </template>
@@ -417,7 +511,7 @@ export default {
         originTop: 0
       },
       headTitleMinimized: false,
-      basicPriceCurrencyOptions: ['全部', '美元', '欧元', '人民币'],
+      basicPriceCurrencyOptions: ['全部', '美元', '欧元'],
       basicPriceTermOptions: ['全部', 'EXW', 'FOB', 'CIF', 'DAP', 'DDP'],
       basicPriceCurrencyFilter: ['全部'],
       basicPriceTermFilter: ['全部'],
@@ -425,7 +519,7 @@ export default {
       _basicPriceTermFilterPrev: ['全部'],
       basicPriceTipTerms: ['exw', 'fob', 'cif', 'dap', 'ddp'],
       basicPriceTipCurrencies: [
-        { key: 'rmb', label: 'RMB(人民币)' },
+        // { key: 'rmb', label: 'RMB(人民币)' },
         { key: 'usd', label: 'USD(美元)' },
         { key: 'eur', label: 'EUR(欧元)' }
       ],
@@ -446,6 +540,15 @@ export default {
       basicPriceRowTipHideTimer: null,
       basicPriceActiveRowKey: null,
       basicPriceRowTipMarginInput: 0,
+      pileDetailTip: {
+        visible: false,
+        top: 0,
+        left: 0,
+        row: null,
+        list: []
+      },
+      pileDetailTipHideTimer: null,
+      pileDetailActiveRowId: null,
       quotationReportDrawerVisible: false,
       quotation: new Quotation(),
     }
@@ -454,7 +557,7 @@ export default {
     ...mapGetters(['name']),
     basicPriceTipCurrenciesDisplay() {
       return [
-        { key: 'rmb', label: this.tr('RMB(人民币)', 'RMB') },
+        // { key: 'rmb', label: this.tr('RMB(人民币)', 'RMB') },
         { key: 'usd', label: this.tr('USD(美元)', 'USD') },
         { key: 'eur', label: this.tr('EUR(欧元)', 'EUR') }
       ]
@@ -464,6 +567,49 @@ export default {
         top: `${this.basicPriceRowTip.top}px`,
         left: `${this.basicPriceRowTip.left}px`
       }
+    },
+    pileDetailTipStyle() {
+      return {
+        top: `${this.pileDetailTip.top}px`,
+        left: `${this.pileDetailTip.left}px`
+      }
+    },
+    /** 桩信息统计表 + 合计行（深度、10厘米价格为按桩总数加权平均） */
+    pileInfoStatisticsDisplay() {
+      const rows = (this.planResult && this.planResult.pileInfoStatistics) || []
+      if (rows.length === 0) return []
+
+      let totalTrackerNum = 0
+      let totalPileNum = 0
+      let weightedDepth = 0
+      let weightedPrice10cm = 0
+
+      rows.forEach(row => {
+        if (row && row.trackBrifeName === '合计') return
+        const trackerNum = Number(row.trackerNum) || 0
+        const pileTotal = Number(row.trackerPileTotalNum) || 0
+        const avgDepth = Number(row.trackerPileAverageDepth) || 0
+        const avgPrice10 = Number(row.trackerPileAveragePricePer10cm) || 0
+
+        totalTrackerNum += trackerNum
+        totalPileNum += pileTotal
+        weightedDepth += avgDepth * pileTotal
+        weightedPrice10cm += avgPrice10 * pileTotal
+      })
+
+      return [
+        ...rows.filter(row => row && row.trackBrifeName !== '合计'),
+        {
+          trackBrifeName: '合计',
+          trackerNum: totalTrackerNum,
+          trackerPileType: '',
+          trackerPileNum: '',
+          trackerPileTotalNum: totalPileNum,
+          trackerPileAverageDepth: totalPileNum ? weightedDepth / totalPileNum : 0,
+          trackerPileAveragePricePer10cm: totalPileNum ? weightedPrice10cm / totalPileNum : 0,
+          isPileInfoTotal: true
+        }
+      ]
     },
     theProjectAndPlanObj() {
       const src = this.projectAndPlan || {}
@@ -519,7 +665,10 @@ export default {
     basicPriceVisibleColumns() {
       return this.basicPriceAllColumns.filter(col => {
         const [cur, term] = col.prop.split('_')
-        return this.isBasicPriceCurrencyVisible(cur) && this.isBasicPriceTermVisible(term)
+        let r = this.isBasicPriceCurrencyVisible(cur) && this.isBasicPriceTermVisible(term)
+        //将人民币过滤不要
+        r = r && cur !== 'rmb'
+        return r
       })
     },
     basicPriceTableWidth() {
@@ -534,7 +683,7 @@ export default {
       this.lgc = !this.lgc
     },
     currencyOptionLabel(val) {
-      const map = { 全部: 'All', 美元: 'USD', 欧元: 'EUR', 人民币: 'RMB' }
+      const map = { 全部: 'All', 美元: 'USD', 欧元: 'EUR'}
       return this.lgc ? val : (map[val] || val)
     },
     termOptionLabel(val) {
@@ -821,6 +970,83 @@ export default {
         top = Math.max(viewportMargin, window.innerHeight - tipMaxH - viewportMargin)
       }
       return { top, left }
+    },
+    calcPileDetailTipPosition(tr) {
+      const tipW = 720
+      const tipMaxH = 400
+      const gap = 10
+      const viewportMargin = 8
+      const trRect = tr.getBoundingClientRect()
+      const tableEl = this.$refs.pileInfoTable && this.$refs.pileInfoTable.$el
+      const tableRect = tableEl ? tableEl.getBoundingClientRect() : null
+      const viewportLeft = viewportMargin
+      const viewportRight = window.innerWidth - viewportMargin
+      let left
+      const tableRightFullyVisible = tableRect && tableRect.right <= viewportRight
+      const roomOutsideTable = tableRect && tableRect.right + gap + tipW <= viewportRight
+      if (tableRect && tableRightFullyVisible && roomOutsideTable) {
+        left = tableRect.right + gap
+      } else if (tableRect && tableRightFullyVisible) {
+        left = tableRect.right - gap - tipW
+        left = Math.max(tableRect.left, left)
+      } else {
+        left = viewportRight - tipW
+      }
+      left = Math.max(viewportLeft, Math.min(left, viewportRight - tipW))
+      let top = trRect.top
+      if (top + tipMaxH > window.innerHeight - viewportMargin) {
+        top = Math.max(viewportMargin, window.innerHeight - tipMaxH - viewportMargin)
+      }
+      return { top, left }
+    },
+    onPileInfoCellEnter(row, column, cell, event) {
+      if (!column || column.columnKey !== 'pileDetail' || !row || row.isPileInfoTotal || row.trackBrifeName === '合计') return
+      this.cancelPileDetailTipHide()
+      const el = (event && event.target) || cell
+      const tr = el && el.closest ? el.closest('tr') : null
+      if (!tr) return
+      const { top, left } = this.calcPileDetailTipPosition(tr)
+      this.pileDetailActiveRowId = row.id != null ? row.id : row.trackBrifeName
+      this.pileDetailTip = {
+        visible: true,
+        top,
+        left,
+        row,
+        list: Array.isArray(row.trackerPileInfoList) ? row.trackerPileInfoList : []
+      }
+    },
+    onPileInfoCellLeave(row, column) {
+      if (!column || column.columnKey !== 'pileDetail') return
+      this.schedulePileDetailTipHide()
+    },
+    onPileDetailTipMouseLeave() {
+      this.schedulePileDetailTipHide()
+    },
+    schedulePileDetailTipHide() {
+      this.cancelPileDetailTipHide()
+      this.pileDetailTipHideTimer = setTimeout(() => {
+        this.pileDetailTip.visible = false
+        this.pileDetailTip.row = null
+        this.pileDetailTip.list = []
+        this.pileDetailActiveRowId = null
+      }, 200)
+    },
+    cancelPileDetailTipHide() {
+      if (this.pileDetailTipHideTimer) {
+        clearTimeout(this.pileDetailTipHideTimer)
+        this.pileDetailTipHideTimer = null
+      }
+    },
+    pileInfoRowClassName({ row }) {
+      const base = this.summaryPlanRowClassName({ row })
+      if (
+        this.pileDetailActiveRowId !== null &&
+        row &&
+        (row.id === this.pileDetailActiveRowId || row.trackBrifeName === this.pileDetailActiveRowId)
+      ) {
+        return base ? `${base} pile-info-row--active` : 'pile-info-row--active'
+      }
+      return base
     },
     /** Element UI 2.x 使用 cell-mouse-enter，无 row-mouse-enter */
     onBasicPriceRowEnter(row, column, cell, event) {
@@ -1202,6 +1428,29 @@ export default {
       }
       return index + 1
     },
+    /** 四舍五入为整数显示 */
+    formatInteger(row, column, cellValue) {
+      if (typeof cellValue === 'number' && !isNaN(cellValue)) {
+        return Math.round(cellValue)
+      }
+      const n = parseFloat(cellValue)
+      if (!isNaN(n)) {
+        return Math.round(n)
+      }
+      return cellValue == null ? '' : cellValue
+    },
+    /** 固定保留两位小数（含 0 显示为 0.00） */
+    formatFixed4(row, column, cellValue) {
+      if (typeof cellValue === 'number' && !isNaN(cellValue)) {
+        return cellValue.toFixed(4)
+      }
+      const n = parseFloat(cellValue)
+      if (!isNaN(n)) {
+        return n.toFixed(4)
+      }
+      return cellValue == null ? '' : cellValue
+    },
+    
     formatNumber2(row, column, cellValue) {
       if (typeof (cellValue) === 'number') {
         if (cellValue === 0) {
@@ -1274,6 +1523,7 @@ export default {
   },
   beforeDestroy() {
     this.cancelBasicPriceRowTipHide()
+    this.cancelPileDetailTipHide()
     this.onBasicPriceRowTipDragEnd()
     document.removeEventListener('mousemove', this.onHeadTitleDragMove)
     document.removeEventListener('mouseup', this.onHeadTitleDragEnd)
@@ -1683,6 +1933,84 @@ export default {
 
 .basic-price-filters__select {
   width: 280px;
+}
+
+.pile-info-table-wrap {
+  position: relative;
+}
+
+/* 平均深度列：与桩总数等普通列一致，不使用末尾价格列暖色样式 */
+.pile-info-table-wrap ::v-deep .el-table__header-wrapper thead th:nth-child(7),
+.pile-info-table-wrap ::v-deep .el-table__header-wrapper thead th.pile-info-col-plain {
+  background: linear-gradient(180deg, #f0f4f8 0%, #e4ebf2 100%) !important;
+  color: #303133 !important;
+  font-weight: 600 !important;
+}
+
+.pile-info-table-wrap ::v-deep td.pile-info-col-plain,
+.pile-info-table-wrap ::v-deep .el-table__body-wrapper tbody td:nth-child(7) {
+  background-color: #fff !important;
+}
+
+.pile-info-table-wrap ::v-deep tr.el-table__row--striped td.pile-info-col-plain,
+.pile-info-table-wrap ::v-deep tr.el-table__row--striped td:nth-child(7) {
+  background-color: #fafbfc !important;
+}
+
+.pile-info-table-wrap ::v-deep tr:hover>td.pile-info-col-plain,
+.pile-info-table-wrap ::v-deep tr:hover>td:nth-child(7) {
+  background-color: #ecf5ff !important;
+}
+
+.pile-info-table-wrap ::v-deep tr.summary-plan-table__row-total>td.pile-info-col-plain,
+.pile-info-table-wrap ::v-deep tr.summary-plan-table__row-total>td:nth-child(7) {
+  background: linear-gradient(180deg, #d9ecff 0%, #c5ddf5 100%) !important;
+  color: #1f2d3d !important;
+}
+
+.pile-info-table-wrap ::v-deep tr.summary-plan-table__row-total:hover>td.pile-info-col-plain,
+.pile-info-table-wrap ::v-deep tr.summary-plan-table__row-total:hover>td:nth-child(7) {
+  background: linear-gradient(180deg, #cce4f9 0%, #b8d4f0 100%) !important;
+}
+
+.pile-info-table-wrap ::v-deep tr.pile-info-row--active>td {
+  background-color: #d9ecff !important;
+}
+
+.pile-info-table-wrap ::v-deep tr.pile-info-row--active:hover>td {
+  background-color: #c6e2ff !important;
+}
+
+.pile-detail-trigger {
+  color: #409eff;
+  cursor: default;
+  font-size: 13px;
+}
+
+.pile-detail-tip {
+  position: fixed;
+  z-index: 3000;
+  width: 720px;
+  max-height: 420px;
+  padding: 10px 12px 12px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  pointer-events: auto;
+}
+
+.pile-detail-tip__title {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebeef5;
+  font-size: 14px;
+  font-weight: 600;
+  color: #409eff;
+}
+
+.pile-detail-tip__table {
+  width: 100%;
 }
 
 .basic-price-table-wrap {

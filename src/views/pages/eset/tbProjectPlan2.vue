@@ -1082,6 +1082,7 @@ export default {
     },
     //结构部分设计完成,提交校对
     showDialogSubmitCheckStru(row) {
+      console.log('showDialogSubmitCheckStru:', row);
       this.theRoles = ''
       this.theProject = this.projectList.find((e) => e.code === row.project_code)
       this.thePlan = this.coverPlan(row)

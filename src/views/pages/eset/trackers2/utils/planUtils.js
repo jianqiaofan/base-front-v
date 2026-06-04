@@ -13,14 +13,14 @@ export default {
       tp.planTrackerNum = tp.trackersInfo.reduce((a, b) => a + +b.trackerNum, 0)  //总支架数量
       tp.planCapacity = tp.trackersInfo.reduce((a, b) => a + b.pv_capacity * b.trackerNum * b.solar_list.reduce((c, d) => 1*c + 1*d), 0)  //总容量
     }
-    console.log('tp.planCapacity===================================================')
-    console.log(tp.planCapacity)
+
     console.time('耗时')
     let spareParts = tp.spareParts  //备品备件率对象
     let trackers = tp.trackersInfo
     tp.totalTrackerNum = trackers.reduce((a, b) => a + b.trackerNum * 1, 0)  //支架总数
     for (let i = 0; i < trackers.length; i++) {
       console.log('trackers[i]',trackers[i])
+      trackers[i].trackerPostInfoList = trackers[i].post_info_lst || []
       let bom = trackers[i].resultList.bom1
       if (bom !== undefined && bom.length > 0) {
         bom.forEach(b => {
@@ -62,6 +62,9 @@ export default {
         trackers[i].pricePerWattSpare = trackers[i].trackerPriceSpare / trackers[i].trackerCapacity //单个支架瓦单价(含备品备件)
         trackers[i].trackerNumRatio = trackers[i].trackerNum / tp.totalTrackerNum  //支架数量占比
         trackers[i].trackerTotalCapacity = trackers[i].trackerCapacity * trackers[i].trackerNum //本类型支架总容量
+        // console.log('trackers[i].trackerPostInfoList===================================================')
+        // console.log(trackers[i].trackerPostInfoList)
+        // console.log(trackers[i])
       }
     }
 
@@ -93,9 +96,11 @@ export default {
     }
 
     tp.summaryData = summaryData(tp)  //summary表信息
+
     if (trackers.length > 0) {
-      tp.postStatistics = planPostMsg(tp)  //立柱统计信息
+      tp.pileInfoStatistics = planPileInfoMsg(tp)  //桩信息统计信息
     }
+
 
     console.log('总耗时:', Date.now() - start_time, '毫秒')
     console.timeEnd('耗时')
@@ -176,16 +181,93 @@ function summaryData(plan) {
  * @param plan
  */
 
-function planPostMsg(plan) {
-  console.log('function planPostMsg(plan)')
-  console.log(plan)
-  let pileObjs = []
-  // plan.trackersInfo.forEach(t => {
-  //   let a = t.post_info_lst.map(m => getPileObj(m, t.trackerNum,t.trackerCapacity))
-  //   pileObjs.push(...a)
-  // })
+function getPileMeterPrice(priceMsg, section, material) {
+  const list = priceMsg || []
+  const price = list.find(m => m.productCode === section && m.material && m.material.includes(material))
+  if (!price || price.unitPrice == null || !price.lenth) {
+    return 0
+  }
+  return 1000 * price.unitPrice / price.lenth || 0
+}
 
-  return
+function planPileInfoMsg(plan) {
+  // console.log('function planPostMsg(plan)=============================================')
+  // console.log(plan.trackersInfo[0].trackerPostInfoList)
+  let priceMsg = plan.priceMsg || []
+  let r = []
+  ;(plan.trackersInfo || []).forEach(t => {
+    let track_pile_info = []
+    const postList = t.trackerPostInfoList || t.post_info_lst || []
+    postList.forEach(p => {
+      if(p.pile_type === 0){
+        let a = {
+          pile_type: '桩柱一体',
+          category: p.category,  //驱动/非驱动
+          position: p.position,
+          section: p.section,
+          material: p.material,
+          depth: p.pile_obj && p.pile_obj.pile_depth != null ? p.pile_obj.pile_depth : 0,
+          num: 1,
+          pile_meter_price: getPileMeterPrice(priceMsg, p.section, p.material)
+        }
+        track_pile_info.push(a)
+      } else if(p.pile_type === 3){
+        console.log('p.pile_obj',p.pile_obj)
+        let a = {
+          pile_type: '钢桩',
+          category: p.category,  //驱动/非驱动
+          position: p.position,
+          section: p.pile_obj.pile_body.section,
+          material: p.pile_obj.pile_body.material,
+          depth: p.pile_obj && p.pile_obj.pile_body ? p.pile_obj.pile_body.length : 0,
+          num: 1,
+          pile_meter_price: getPileMeterPrice(priceMsg, p.pile_obj.pile_body.section, p.pile_obj.pile_body.material)
+        }
+        track_pile_info.push(a)
+      } else {
+        let a = {
+          pile_type: p.pile_type === 1 ? '地脚螺栓' : 'PHC管桩',
+          category: p.category,  //驱动/非驱动
+          position: p.position,
+          section: '',
+          material: '',
+          depth: 0,
+          num: 1,
+          pile_meter_price: 0       
+        }
+        track_pile_info.push(a)
+      }
+    })
+    const pileCount = track_pile_info.length
+    const avgDepth = pileCount ? track_pile_info.reduce((a, b) => a + b.depth * 1, 0) / pileCount : 0
+    const avgMeterPrice = pileCount ? track_pile_info.reduce((a, b) => a + b.pile_meter_price * 1, 0) / pileCount : 0
+    const trackerCapacity = t.trackerCapacity || 0
+    r.push({
+      id: t.id,
+      trackBrifeName: t.trackBrifeName,
+      trackerNum: t.trackerNum,
+      trackerCapacity: t.trackerCapacity,
+      trackerPileInfoList: track_pile_info,
+      //单个支架的桩的总数量
+      trackerPileNum: track_pile_info.reduce((a,b) => a + b.num*1, 0),
+      //该类型支架桩总数量
+      trackerPileTotalNum:  track_pile_info.reduce((a,b) => a + b.num*1, 0)*t.trackerNum,
+      //桩的平均深度
+      trackerPileAverageDepth: avgDepth,
+      //桩的平均单米价格
+      trackerPileAveragePrice: avgMeterPrice,
+      //10厘米价格
+      trackerPileAveragePricePer10cm: avgMeterPrice / 10,
+      //桩的瓦单价
+      trackerPileAveragePricePerWatt: trackerCapacity ? avgMeterPrice / trackerCapacity : 0,
+      //桩的类型(拼接并去重)
+      trackerPileType: Array.from(new Set(track_pile_info.map(m => m.pile_type))).join(','),
+    })
+  })
+
+  console.log('r===================================================')
+  console.log(r)
+  return r
 }
 
 //将立柱信息转为可统计的信息
