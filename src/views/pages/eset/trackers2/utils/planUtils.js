@@ -100,6 +100,12 @@ export default {
     if (trackers.length > 0) {
       tp.pileInfoStatistics = planPileInfoMsg(tp)  //桩信息统计信息
     }
+    if (trackers.length > 0) {
+      tp.trackerCorrosionInfo = planTrackerCorrosionInfoMsg(tp)  //支架防腐信息
+    }
+    if (trackers.length > 0) {
+      tp.trackerGeometryInfo = planTrackerGeometryInfoMsg(tp)  //支架几何信息
+    }
 
 
     console.log('总耗时:', Date.now() - start_time, '毫秒')
@@ -264,12 +270,58 @@ function planPileInfoMsg(plan) {
       trackerPileType: Array.from(new Set(track_pile_info.map(m => m.pile_type))).join(','),
     })
   })
-
   console.log('r===================================================')
   console.log(r)
   return r
 }
 
+function planTrackerCorrosionInfoMsg(plan) {
+  let r = []
+  ;(plan.trackersInfo || []).forEach(t => {
+    console.log('t',t)
+    //螺栓防腐处理
+    let boltSurfaceTreatment = t.bolt_surface_treatment
+    if(t.corrosion_proofing_grade === 'C3'){
+      boltSurfaceTreatment = "热镀锌平均≥50μm"
+    }else if(boltSurfaceTreatment === 'C4'){
+      boltSurfaceTreatment = "热镀锌平均≥55μm"
+    }else if(boltSurfaceTreatment === 'C5'){
+      boltSurfaceTreatment = "锌镍合金"
+    }else{
+      boltSurfaceTreatment = "热镀锌平均≥50μm"
+    }
+    
+    r.push({
+      id: t.id,
+      trackBrifeName: t.trackBrifeName,
+      trackerNum: t.trackerNum,
+      corrosionProofingGrade: t.corrosion_proofing_grade,
+      postGalvanizinThickness: "热镀锌,平均厚度大于"+t.post_galvanizin_thickness+"μm",
+      beamGalvanizinThickness: "锌铝镁,平均厚度大于"+t.beam_galvanizin_thickness+"μm",
+      purlinGalvanizinThickness: "锌铝镁,平均厚度大于"+t.purlin_galvanizin_thickness+"μm",
+      boltSurfaceTreatment: boltSurfaceTreatment,
+      beamBrand: t.beam_brand,
+      purlinBrand: t.purlin_brand,
+      productSystem: t.product_system
+    })
+  })
+  return r
+}
+function planTrackerGeometryInfoMsg(plan) {
+  let r = []
+  ;(plan.trackersInfo || []).forEach(t => {
+    r.push({
+      id: t.id,
+      trackBrifeName: t.trackBrifeName,
+      trackerNum: t.trackerNum,
+      panelLength : t.panelLength,
+      panelWidth: t.panelWidth,
+      panelThickness: t.panelThickness,
+      panelWeight: t.panelWeight
+    })
+  })
+  return r
+}
 //将立柱信息转为可统计的信息
 function getPileObj(postInfo, trackerNum,trackerCapacity) {
   let pile_type = postInfo.pile_type

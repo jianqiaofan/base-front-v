@@ -181,9 +181,51 @@
               </el-table>
             </div>
           </transition>
+          <p style="color: red">{{ tr('* 10厘米桩平均瓦单价', '* Avg pile price per W (10cm)') }}：{{ pileAveragePricePerWatt.toFixed(10) }}{{ tr('元(人民币)', ' RMB (CNY)') }}</p>
         </div>
       </el-collapse-item>
       <el-collapse-item name="3">
+        <template #title>
+          <div style="color: red; display: flex; align-items: center; font-size: 18px">
+            <i class="el-icon-info"></i> <!-- 图标 -->
+            <span style="margin-left: 8px; font-weight: bold;">{{ tr('支架防腐信息', 'Tracker corrosion information') }}</span>
+          </div>
+        </template>
+        <div class="summary-plan-table tracker-corrosion-info-table-wrap" style="margin-left: 20px">
+          <el-table :data="trackerCorrosionInfoDisplay" border stripe class="summary-plan-table__grid"
+            style="width: 1800px">
+            <el-table-column type="index" :label="tr('序号', 'No.')" width="50" :index="indexMethod"></el-table-column>
+            <el-table-column prop="trackBrifeName" :label="tr('支架型号', 'Tracker type')" width="180px"></el-table-column>
+            <el-table-column prop="corrosionProofingGrade" :label="tr('防腐等级', 'Corrosion proofing grade')" width="100px"></el-table-column>
+            <el-table-column prop="beamBrand" :label="tr('主梁品牌', 'Beam brand')" width="100px"></el-table-column>
+            <el-table-column prop="purlinBrand" :label="tr('檩条品牌', 'Purlin brand')" width="100px" ></el-table-column>
+            <el-table-column prop="postGalvanizinThickness" :label="tr('立柱防腐厚度', 'Post galvanizin thickness')" width="120px"></el-table-column>
+            <el-table-column prop="beamGalvanizinThickness" :label="tr('主梁防腐厚度', 'Beam galvanizin thickness')" width="120px"></el-table-column>
+            <el-table-column  prop="purlinGalvanizinThickness" :label="tr('檩条防腐厚度', 'Purlin galvanizin thickness')" width="120px" ></el-table-column>
+            <el-table-column prop="boltSurfaceTreatment" :label="tr('螺栓防腐处理', 'Bolt surface treatment')" width="160px" ></el-table-column>
+          </el-table>
+        </div>
+      </el-collapse-item>
+      <el-collapse-item name="4">
+        <template #title>
+          <div style="color: red; display: flex; align-items: center; font-size: 18px">
+            <i class="el-icon-info"></i> <!-- 图标 -->
+            <span style="margin-left: 8px; font-weight: bold;">{{ tr('支架几何信息', 'Tracker geometry information') }}</span>
+          </div>
+        </template>
+        <div class="summary-plan-table tracker-geometry-info-table-wrap" style="margin-left: 20px">
+          <el-table :data="trackerGeometryInfoDisplay" border stripe class="summary-plan-table__grid" style="width: 1800px">
+            <el-table-column type="index" :label="tr('序号', 'No.')" width="50" :index="indexMethod"></el-table-column>
+            <el-table-column prop="trackBrifeName" :label="tr('支架型号', 'Tracker type')" width="180px"></el-table-column>
+            <el-table-column prop="trackerNum" :label="tr('支架数量', 'Tracker quantity')" width="80px"></el-table-column>
+            <el-table-column prop="panelLength" :label="tr('板长', 'Panel length')" width="120px"></el-table-column>
+            <el-table-column prop="panelWidth" :label="tr('板宽', 'Panel width')" width="120px"></el-table-column>
+            <el-table-column prop="panelThickness" :label="tr('板厚', 'Panel thickness')" width="120px"></el-table-column>
+            <el-table-column prop="panelWeight" :label="tr('板重', 'Panel weight')" width="120px"></el-table-column>
+          </el-table>
+        </div>
+      </el-collapse-item>
+      <el-collapse-item name="5">
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
@@ -193,17 +235,17 @@
         <div>
           <el-table :data="materialFee" border style="width: 1200px">
             <el-table-column type="index" :label="tr('序号', 'No.')" width="50" :index="indexMethod"></el-table-column>
-            <el-table-column prop="name" :label="tr('材料名称', 'Material')" width="100"></el-table-column>
+            <el-table-column prop="name" :label="tr('材料名称', 'Material')" width="150"></el-table-column>
             <el-table-column prop="totalPrice" :label="tr('总价(RMB 元)', 'Total (RMB)')" width="200"
               :formatter="formatNumber2"></el-table-column>
             <el-table-column prop="pricePerWatt" :label="tr('瓦单价', 'Price / W')" width="200" :formatter="formatNumber6"></el-table-column>
             <el-table-column prop="totalWeight" :label="tr('总重(kg)', 'Total Weight (kg)')" width="200" :formatter="formatNumber2"></el-table-column>
             <el-table-column prop="tonPerMw" :label="tr('兆瓦吨重', 't/MW')" width="200" :formatter="formatNumber6"></el-table-column>
-            <el-table-column prop="processingSite" :label="tr('生产地', 'Origin')" width="100"></el-table-column>
+            <el-table-column prop="processingSite" :label="tr('生产地', 'Origin')" width="160"></el-table-column>
           </el-table>
         </div>
       </el-collapse-item>
-      <el-collapse-item name="4">
+      <el-collapse-item name="6">
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
@@ -350,7 +392,7 @@
           <el-button class="fee-div__save-btn" type="primary" size="mini" @click="saveFormInfo">{{ tr('保存输入信息', 'Save') }}</el-button>
         </div>
       </el-collapse-item>
-      <el-collapse-item name="5">
+      <el-collapse-item name="7">
         <template #title>
           <div style="color: red; display: flex; align-items: center; font-size: 18px">
             <i class="el-icon-info"></i> <!-- 图标 -->
@@ -457,7 +499,7 @@
                 <el-button type="primary" size="mini" icon="el-icon-refresh" class="basic-price-row-tip__refresh-btn"
                   :title="tr('刷新计算', 'Recalculate')" @click.stop="refreshBasicPriceRowTip">{{ tr('刷新', 'Refresh') }}</el-button>
                 <el-button type="success" size="mini" icon="el-icon-document" class="basic-price-row-tip__quotation-btn"
-                  :title="tr('生成报价单', 'Generate quotation')" @click.stop="openQuotationReportDrawer">{{ tr('生成报价单', 'Generate quotation') }}</el-button>
+                  :title="tr('生成报价单', 'Generate quotation')" @click.stop="openQuotationReportDrawer">{{ tr('生成报价单', 'Quotation') }}</el-button>
               </div>
             </div>
           </transition>
@@ -498,8 +540,8 @@ export default {
   },
   data() {
     return {
-      lgc: true, // true=中文, false=English
-      activeNames: ['3', '4'],
+      lgc: false, // true=中文, false=English
+      activeNames: ['6', '7'],
       form: {},
       exchangeRateLoading: false,
       headTitlePos: { left: 0, top: 60 },
@@ -610,6 +652,16 @@ export default {
           isPileInfoTotal: true
         }
       ]
+    },
+    trackerCorrosionInfoDisplay() {
+      return this.planResult.trackerCorrosionInfo || []
+    },
+    trackerGeometryInfoDisplay() {
+      return this.planResult.trackerGeometryInfo || []
+    },
+    //10厘米桩平均瓦单价计算
+    pileAveragePricePerWatt() {
+      return this.pileInfoStatisticsDisplay.reduce((a, b) => a + b.trackerPileAveragePricePer10cm*b.trackerPileNum*b.trackerNum, 0) / this.planTotalCapacity
     },
     theProjectAndPlanObj() {
       const src = this.projectAndPlan || {}
@@ -1933,6 +1985,37 @@ export default {
 
 .basic-price-filters__select {
   width: 280px;
+}
+
+/* 檩条、螺栓列：与前面列一致，不使用末尾备品价格列暖色样式 */
+.tracker-corrosion-info-table-wrap ::v-deep .el-table__header-wrapper thead th:nth-child(7),
+.tracker-corrosion-info-table-wrap ::v-deep .el-table__header-wrapper thead th:nth-child(8),
+.tracker-corrosion-info-table-wrap ::v-deep .el-table__header-wrapper thead th:nth-child(9),
+.tracker-corrosion-info-table-wrap ::v-deep .el-table__header-wrapper thead th.corrosion-info-col-plain {
+  background: linear-gradient(180deg, #f0f4f8 0%, #e4ebf2 100%) !important;
+  color: #303133 !important;
+  font-weight: 600 !important;
+}
+
+.tracker-corrosion-info-table-wrap ::v-deep td.corrosion-info-col-plain,
+.tracker-corrosion-info-table-wrap ::v-deep .el-table__body-wrapper tbody td:nth-child(7),
+.tracker-corrosion-info-table-wrap ::v-deep .el-table__body-wrapper tbody td:nth-child(8),
+.tracker-corrosion-info-table-wrap ::v-deep .el-table__body-wrapper tbody td:nth-child(9) {
+  background-color: #fff !important;
+}
+
+.tracker-corrosion-info-table-wrap ::v-deep tr.el-table__row--striped td.corrosion-info-col-plain,
+.tracker-corrosion-info-table-wrap ::v-deep tr.el-table__row--striped td:nth-child(7),
+.tracker-corrosion-info-table-wrap ::v-deep tr.el-table__row--striped td:nth-child(8),
+.tracker-corrosion-info-table-wrap ::v-deep tr.el-table__row--striped td:nth-child(9) {
+  background-color: #fafbfc !important;
+}
+
+.tracker-corrosion-info-table-wrap ::v-deep tr:hover>td.corrosion-info-col-plain,
+.tracker-corrosion-info-table-wrap ::v-deep tr:hover>td:nth-child(7),
+.tracker-corrosion-info-table-wrap ::v-deep tr:hover>td:nth-child(8),
+.tracker-corrosion-info-table-wrap ::v-deep tr:hover>td:nth-child(9) {
+  background-color: #ecf5ff !important;
 }
 
 .pile-info-table-wrap {

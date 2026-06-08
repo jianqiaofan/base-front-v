@@ -1967,10 +1967,12 @@ export default {
     },
     //选择好文件好,确认提取文件中数据
     importDataFromTxt() {
+      this.module_data.original_file_content = []
       this.module_data.trackersInfo = []
       // console.log(this.fileList.length)
       for (let i = 0; i < this.fileList.length; i++) {
         let file = this.fileList[i]
+        this.module_data.original_file_content.push(file.raw)
         this.handleFile(file)
       }
       console.log('&&&', this.module_data.trackersInfo)

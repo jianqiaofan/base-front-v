@@ -18,13 +18,13 @@ export default {
   },
 
   //txt文件数据清理
-  fileDataCleaning(inputStr) {
-    inputStr = inputStr
-      .replaceAll('\r', '').replaceAll('\n', '')
-      .replaceAll(' ', '')
-      .replaceAll('"', '\'')
-    return inputStr
-  },
+  // fileDataCleaning(inputStr) {
+  //   inputStr = inputStr
+  //     .replaceAll('\r', '').replaceAll('\n', '')
+  //     .replaceAll(' ', '')
+  //     .replaceAll('"', '\'')
+  //   return inputStr
+  // },
 
 
   //将结构计算软件中导出的文本转化为

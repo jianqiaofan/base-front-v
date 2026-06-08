@@ -3,12 +3,7 @@ import { getTrakcerPrice } from '@/views/pages/eset/trackers2/utils/sellerTool'
 
 class Plan {
    constructor() {
-    // this.plan_code = ''
-    // this.designer = ''
-    // this.seller = ''
-    // this.plan_description = ''
-    // this.project_code = ''
-    // this.project_name = ''
+    this.original_file_content = [],//保存原始的输入文件内容
     this.process_site = { post: '国内', beam: '国内', purlin: '国内' },
     this.spareParts = {
       post: 0.3,
