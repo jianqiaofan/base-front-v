@@ -217,11 +217,25 @@
           <el-table :data="trackerGeometryInfoDisplay" border stripe class="summary-plan-table__grid" style="width: 1800px">
             <el-table-column type="index" :label="tr('序号', 'No.')" width="50" :index="indexMethod"></el-table-column>
             <el-table-column prop="trackBrifeName" :label="tr('支架型号', 'Tracker type')" width="180px"></el-table-column>
-            <el-table-column prop="trackerNum" :label="tr('支架数量', 'Tracker quantity')" width="80px"></el-table-column>
-            <el-table-column prop="panelLength" :label="tr('板长', 'Panel length')" width="120px"></el-table-column>
-            <el-table-column prop="panelWidth" :label="tr('板宽', 'Panel width')" width="120px"></el-table-column>
-            <el-table-column prop="panelThickness" :label="tr('板厚', 'Panel thickness')" width="120px"></el-table-column>
-            <el-table-column prop="panelWeight" :label="tr('板重', 'Panel weight')" width="120px"></el-table-column>
+            <el-table-column :label="tr('组件型号', 'Solar panel')" width="180px" show-overflow-tooltip>
+              <template slot-scope="{ row }">
+                {{ row.panelLength }}x{{ row.panelWidth }}x{{ row.panelThickness }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="holeDimension" :label="tr('孔径', 'Hole dimension')" width="80px"></el-table-column>
+            <el-table-column prop="moduleRatio" :label="tr('组件功率', 'Module capacity')" width="80px"></el-table-column>
+            <el-table-column :label="tr('孔距', 'Hole spacing')" width="120px" show-overflow-tooltip>
+              <template slot-scope="{ row }">
+                {{ row.shortHole }}/{{ row.longHole }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="modulesPerString" :label="tr('组件/串', 'Modules/string')" width="120px"></el-table-column>
+            <el-table-column prop="groundClearance" :label="tr('离地高度', 'Ground clearance')" width="120px"></el-table-column>
+            <el-table-column prop="maximumTilt" :label="tr('最大倾角(°)', 'Maximum tilt(°)')" width="120px"></el-table-column>
+            <el-table-column prop="pileLengthAboveGround" :label="tr('桩长', 'Pile length above ground')" width="120px"></el-table-column>
+            <el-table-column prop="moduleGap" :label="tr('组件拼缝', 'Module gap(E-W)')" width="120px"></el-table-column>
+            <el-table-column prop="bearingGap" :label="tr('支撑间距', 'Bearing gap')" width="120px"></el-table-column>
+            <el-table-column prop="driverGap" :label="tr('驱动间距', 'Driver gap')" width="120px"></el-table-column>
           </el-table>
         </div>
       </el-collapse-item>

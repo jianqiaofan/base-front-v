@@ -1967,15 +1967,14 @@ export default {
     },
     //选择好文件好,确认提取文件中数据
     importDataFromTxt() {
-      this.module_data.original_file_content = []
+      this.module_data.original_file_content = []  //将内容清空
       this.module_data.trackersInfo = []
       // console.log(this.fileList.length)
       for (let i = 0; i < this.fileList.length; i++) {
         let file = this.fileList[i]
-        this.module_data.original_file_content.push(file.raw)
         this.handleFile(file)
       }
-      console.log('&&&', this.module_data.trackersInfo)
+      console.log('&&&', this.module_data)
     },
     //气象站点击接受建议时，数量自动计算
     handleWsClick(e) {
@@ -1994,9 +1993,12 @@ export default {
       let Edge_info = ''
       let Interior_info = ''
       apiTracker.getTextFileContent(file).then(content => {
+        this.module_data.original_file_content.push({
+          fileName: fileName,
+          content: apiTracker.fileDataCleaning(content)
+        })
         content = content.replace('cal_option.ui_option', 'cal_option_ui_option')
         const cntObj = JSON.parse(content)  //转为对象
-
         if (content.includes('ui_model_info') && content.includes('model_dict')) {
           let initInfo = this.initDefault  //初始默认数据
           let ui_model_info = cntObj.ui_model_info

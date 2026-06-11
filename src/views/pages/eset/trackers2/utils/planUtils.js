@@ -278,7 +278,6 @@ function planPileInfoMsg(plan) {
 function planTrackerCorrosionInfoMsg(plan) {
   let r = []
   ;(plan.trackersInfo || []).forEach(t => {
-    console.log('t',t)
     //螺栓防腐处理
     let boltSurfaceTreatment = t.bolt_surface_treatment
     if(t.corrosion_proofing_grade === 'C3'){
@@ -310,14 +309,27 @@ function planTrackerCorrosionInfoMsg(plan) {
 function planTrackerGeometryInfoMsg(plan) {
   let r = []
   ;(plan.trackersInfo || []).forEach(t => {
+    console.log('t=====',t)
+    let trackerStrs = t.trackBrifeName.split('-')[1].split('strs')[0]
     r.push({
       id: t.id,
       trackBrifeName: t.trackBrifeName,
+      trackerStrs: trackerStrs,
       trackerNum: t.trackerNum,
-      panelLength : t.panelLength,
-      panelWidth: t.panelWidth,
-      panelThickness: t.panelThickness,
-      panelWeight: t.panelWeight
+      panelLength : t.pv_length,
+      panelWidth: t.pv_width,
+      panelThickness: t.pv_thickness,
+      holeDimension: 1095,
+      moduleRatio: t.pv_capacity,
+      shortHole: 400,
+      longHole: 1400,
+      modulesPerString: t.solar_num/trackerStrs*1,
+      groundClearance: t.h_min, //最小离地高度
+      maximumTilt: 60,
+      pileLengthAboveGround: 1392,
+      moduleGap: 10,
+      bearingGap: 160,
+      driverGap: 1000 //fdsa
     })
   })
   return r

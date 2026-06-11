@@ -17,14 +17,13 @@ export default {
     })
   },
 
-  //txt文件数据清理
-  // fileDataCleaning(inputStr) {
-  //   inputStr = inputStr
-  //     .replaceAll('\r', '').replaceAll('\n', '')
-  //     .replaceAll(' ', '')
-  //     .replaceAll('"', '\'')
-  //   return inputStr
-  // },
+  // txt文件数据清理,去除换行符、空格
+  fileDataCleaning(inputStr) {
+    inputStr = inputStr
+      .replaceAll('\r', '').replaceAll('\n', '')
+      .replaceAll(' ', '')
+    return inputStr
+  },
 
 
   //将结构计算软件中导出的文本转化为
