@@ -27,13 +27,14 @@ export default {
 
 
   //将结构计算软件中导出的文本转化为
-  trackStr2Obj(fileName, trackerPos, commonInfo, strackerInfo, initInfo) {
-    console.log("================================================")
-    console.log("fileName",fileName)
-    console.log("trackerPos",trackerPos)
-    console.log("commonInfo",commonInfo)
-    console.log("strackerInfo",strackerInfo)
-    console.log("initInfo",initInfo)
+  trackStr2Obj(fileName, trackerPos, commonInfo, strackerInfo, initInfo,structureResult) {
+    // console.log("================================================")
+    // console.log("fileName",fileName)
+    // console.log("trackerPos",trackerPos)
+    // console.log("commonInfo",commonInfo)
+    // console.log("strackerInfo",strackerInfo)
+    // console.log("initInfo",initInfo)
+    // console.log("structureResult",structureResult)
     // console.log("commonInfo",commonInfo)
     // console.log("strackerInfo",strackerInfo)
     let post_info_lst = []
@@ -41,6 +42,15 @@ export default {
 
     //驱动位置数组
     let drive_post = strackerInfo.post_info_lst.filter(p => p[1].startsWith('t')).map(p => p[0])
+
+    //判断trakcer是否为第三代产品，如果strackerInfo内有gen3属性，并且值为: "Yes"，则认为是第三代产品
+    let isGen3 = false
+    if(strackerInfo.gen3 !== undefined && strackerInfo.gen3 === "Yes"){
+      isGen3 = true
+    }
+    console.log("================================================")
+    console.log("isGen3",isGen3)
+    console.log("================================================")
     //处理梁信息
     const beam_length = strackerInfo.l_beam //主梁总长
     let d = strackerInfo.beam_divide_info_lst
@@ -59,92 +69,25 @@ export default {
     let beam_info_lst_1 = []  //beam 按立柱分段
     let beam_info_lst_2 = []  //beam 按12.5米分段
 
-    //处理Diamond截面，分段点取立柱断点；fdsa
-    if (b_section_type.includes('Diamond')) {
-      beam_divide.unshift(0)  //加上梁起点
-      beam_divide.push(beam_length)  //加上梁终点
-      let arr = beam_divide
-      for (let i = 0; i < arr.length - 1; i++) {
-        let staPoint = arr[i]  //起点
-        let endPoint = arr[i + 1]  //终点
-        let section = 'Diamond-' + b_diameter + 'x' + b_thickness[i]
-        let len = arr[i + 1] - arr[i] + 350  //350为插芯长度
-        let cg = '中间主梁'
-        if (i === 0 || i === arr.length - 2) {
-          cg = '端部主梁'
-        }
-        if (drive_post.includes(arr[i] * 1) || drive_post.includes(arr[i + 1] * 1)) {
-          cg = '驱动主梁'
-        }
-
-        let f = {
-          start: arr[i],
-          end: arr[i + 1],
-          section: section,
-          origin_section: section,//原始截面
-          material: b_material,
-          length: arr[i + 1] - arr[i],  //350为插芯在后台再考虑，这里强调几何数据
-          category: cg
-        }
-        beam_info_lst_1.push(f)
-      }
-      beam_info_lst = beam_info_lst_1
+    //处理应力比数据
+    let beam_ratio = undefined
+    if(structureResult !== undefined && structureResult.tube_ratio !== undefined && structureResult.tube_ratio[trackerPos] !== undefined){
+      beam_ratio = structureResult.tube_ratio[trackerPos]
     }
+    //处理分段点取    
+    beam_info_lst_1 = this.beamDivideMethed1(beam_divide,beam_length,drive_post,b_section_type,b_diameter,b_thickness,b_material,beam_ratio)
+    beam_info_lst_2 = this.beamDivideMethed2(beam_divide,beam_length,drive_post,b_section_type,b_diameter,b_thickness,b_material)
 
-//八角型主梁时，分段点以驱动立柱分一次，然后以不超过12.5米（运输要求）分段，分段数影响报箍数量(两个驱动立柱之间至少有一个抱箍)
-    if (b_section_type.includes('Octagon')) {
-      beam_divide.unshift(0)  //此时的beam_divide为驱动立柱位置，加上梁起点
-      beam_divide.push(beam_length)  //加上梁终点
-      const maxLength = 12500    //考虑生产运输等因素的一个最大长度
-      let midPoint = []  //中间要打段的点位置
-      for (let i = 0; i < beam_divide.length - 1; i++) {
-        let lenth = beam_divide[i + 1] - beam_divide[i]
-        if (lenth > maxLength) {  //大于运输长度时，分段
-          let pics = Math.floor(lenth / maxLength) + 1  //分成的段数
-          for (let j = 1; j < pics; j++) {
-            midPoint.push(beam_divide[i] + j * (lenth / pics).toFixed(0))
-          }
-        } else {
-          //两个驱动立柱之间必须有一个断点
-          if (i !== 0 && i !== beam_divide.length - 2) {
-            midPoint.push(beam_divide[i] + (0.5 * lenth).toFixed(0))
-          }
-        }
+    if(isGen3){
+      beam_info_lst = beam_info_lst_1  //三代产品，按立柱分段
+    } else {
+      if (b_section_type.includes('Octagon')) {
+        beam_info_lst = beam_info_lst_2  //八角型主梁，按12.5米分段
+      } else {
+        beam_info_lst = beam_info_lst_1  //菱型主梁，按立柱分段
       }
-
-      //将端点、驱支立柱点和打断点放到一个数组并排序，就是所有的点了
-      let arr = beam_divide.concat(midPoint)
-        .sort(function(a, b) {
-          return a - b
-        })
-
-      for (let i = 0; i < arr.length - 1; i++) {
-        let start = arr[i]  //起点
-        let end = arr[i + 1]  //终点
-        let section = 'Octagon-' + b_diameter + 'x' + b_thickness[i]
-        let len = arr[i + 1] - arr[i]  //350为插芯在后台再考虑，这里强调几何数据
-        let cg = '中间主梁'
-        if (i === 0 || i === arr.length - 2) {
-          cg = '端部主梁'
-        }
-        if (drive_post.includes(arr[i] * 1) || drive_post.includes(arr[i + 1] * 1)) {
-          cg = '驱动主梁'
-        }
-
-        let f = {
-          start: start,
-          end: end,
-          section: section,
-          origin_section: section,//原始截面
-          material: b_material,
-          length: len,  //350为插芯在后台再考虑，这里强调几何数据
-          category: cg
-        }
-        beam_info_lst_2.push(f)
-      }
-      beam_info_lst = beam_info_lst_2
     }
-
+    
     //post 对象内容 ：位置，截面，材质，高度，类别（非驱动/驱动）
     const post_info = strackerInfo.post_info_lst  //立柱
     for (let i = 0; i < post_info.length; i++) {
@@ -152,14 +95,21 @@ export default {
       post_position.push(ar[0])
       if (ar[1].startsWith('t')) {
         drive_post.push(ar[0] * 1)
-      }  //保存到驱动立柱数组
-
+      }  
+      //处理应力比数据
+      let post_ratio = Array(100).fill(-1);  //默认全部为-1
+      if(structureResult !== undefined && structureResult.post_ratio !== undefined && structureResult.post_ratio[trackerPos] !== undefined){
+        post_ratio = structureResult.post_ratio[trackerPos]
+      }
+      //保存到立柱数组
       let f = {
         position: ar[0],
         category: ar[1].startsWith('t') ? '驱动' : '非驱动',
         material: ar[2],
         section: ar[3],
         origin_section: ar[3],//原始截面
+        no: ar[1],//立柱编号
+        ratio: post_ratio[ar[1]],//应力比
         height: strackerInfo.h_post - this.postLengthReduce(ar[1].startsWith('t'), b_section_type, b_diameter, initInfo.slew_drive_inch),  //柱子高度
         pile_type: initInfo.pile_type,  //桩型  0-桩柱一体  1-地脚螺栓 2-PHC管桩 3-钢桩
         pile_obj: initInfo.pile_obj, //桩的对象（给后台进行Bom表生成）
@@ -288,6 +238,93 @@ export default {
     r.beam_section_type = b_section_type  //主梁类型
     r.resultList = []    //存放Bom表数据
     return r
+  },
+
+  //主梁分段方法1：在立柱处分段
+  beamDivideMethed1(beamDivide, beamLength, drivePost, bSectionType, bDiameter, bThickness, bMaterial,beam_ratio) {
+    const arr = beamDivide.concat()
+    arr.unshift(0)  //加上梁起点
+    arr.push(beamLength)  //加上梁终点
+    const sectionPrefix = bSectionType.includes('Octagon') ? 'Octagon' : 'Diamond'
+    const beam_info_lst_1 = []
+
+    for (let i = 0; i < arr.length - 1; i++) {
+      const section = sectionPrefix + '-' + bDiameter + 'x' + bThickness[i]
+      let cg = '中间主梁'
+      if (i === 0 || i === arr.length - 2) {
+        cg = '端部主梁'
+      }
+      if (drivePost.includes(arr[i] * 1) || drivePost.includes(arr[i + 1] * 1)) {
+        cg = '驱动主梁'
+      }
+
+      beam_info_lst_1.push({
+        start: arr[i],
+        end: arr[i + 1],
+        section: section,
+        origin_section: section, //原始截面
+        material: bMaterial,
+        length: arr[i + 1] - arr[i],  //350为插芯在后台再考虑，这里强调几何数据
+        category: cg,
+        ratio: beam_ratio === undefined ? -1 : beam_ratio[i+1]
+      })
+    }
+
+    return beam_info_lst_1
+  },
+
+  //主梁分段方法2：考虑运输最大长度（12.5米）分段
+  beamDivideMethed2(beamDivide, beamLength, drivePost, bSectionType, bDiameter, bThickness, bMaterial) {
+    const beamDividePoints = beamDivide.concat()
+    beamDividePoints.unshift(0)  //此时的beam_divide为驱动立柱位置，加上梁起点
+    beamDividePoints.push(beamLength)  //加上梁终点
+
+    const maxLength = 12500  //考虑生产运输等因素的一个最大长度
+    const midPoint = []  //中间要打段的点位置
+
+    for (let i = 0; i < beamDividePoints.length - 1; i++) {
+      const lenth = beamDividePoints[i + 1] - beamDividePoints[i]
+      if (lenth > maxLength) {  //大于运输长度时，分段
+        const pics = Math.floor(lenth / maxLength) + 1  //分成的段数
+        for (let j = 1; j < pics; j++) {
+          midPoint.push(beamDividePoints[i] + j * (lenth / pics).toFixed(0))
+        }
+      } else {
+        //两个驱动立柱之间必须有一个断点
+        if (i !== 0 && i !== beamDividePoints.length - 2) {
+          midPoint.push(beamDividePoints[i] + (0.5 * lenth).toFixed(0))
+        }
+      }
+    }
+
+    //将端点、驱动立柱点和打断点放到一个数组并排序，就是所有的点了
+    const arr = beamDividePoints.concat(midPoint).sort((a, b) => a - b)
+    const sectionPrefix = bSectionType.includes('Octagon') ? 'Octagon' : 'Diamond'
+    const beam_info_lst_2 = []
+
+    for (let i = 0; i < arr.length - 1; i++) {
+      const section = sectionPrefix + '-' + bDiameter + 'x' + bThickness[i]
+      const len = arr[i + 1] - arr[i]  //350为插芯在后台再考虑，这里强调几何数据
+      let cg = '中间主梁'
+      if (i === 0 || i === arr.length - 2) {
+        cg = '端部主梁'
+      }
+      if (drivePost.includes(arr[i] * 1) || drivePost.includes(arr[i + 1] * 1)) {
+        cg = '驱动主梁'
+      }
+
+      beam_info_lst_2.push({
+        start: arr[i],
+        end: arr[i + 1],
+        section: section,
+        origin_section: section, //原始截面
+        material: bMaterial,
+        length: len,
+        category: cg
+      })
+    }
+
+    return beam_info_lst_2
   },
 
   //柱的上端点应该从梁中心点下移一段距离
