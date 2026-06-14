@@ -281,8 +281,35 @@ export default {
   computed:{
 
   },
-  props: ['receive','scope'],
+  props: ['receive', 'scope', 'initialData'],
+  created() {
+    this.hydrateFromInitial()
+  },
   methods: {
+    hydrateFromInitial() {
+      if (!this.initialData) {
+        return
+      }
+      if (this.initialData.pile_desc) {
+        this.pile_desc = this.initialData.pile_desc
+      }
+      const pileObj = this.initialData.pile_obj
+      if (!pileObj) {
+        return
+      }
+      if (pileObj.pile_body) {
+        this.pile_body = { ...this.pile_body, ...JSON.parse(JSON.stringify(pileObj.pile_body)) }
+      }
+      if (pileObj.base_bolt_list && pileObj.base_bolt_list.length) {
+        this.base_bolt_list = JSON.parse(JSON.stringify(pileObj.base_bolt_list))
+      }
+      if (pileObj.base_plate_list && pileObj.base_plate_list.length) {
+        this.base_plate_list = JSON.parse(JSON.stringify(pileObj.base_plate_list))
+      }
+      if (pileObj.stiffener_list && pileObj.stiffener_list.length) {
+        this.stiffener_list = JSON.parse(JSON.stringify(pileObj.stiffener_list))
+      }
+    },
     onSubmit() {
       console.log('submit!')
     },

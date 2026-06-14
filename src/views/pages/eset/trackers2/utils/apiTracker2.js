@@ -27,7 +27,8 @@ export default {
 
 
   //将结构计算软件中导出的文本转化为
-  trackStr2Obj(fileName, trackerPos, commonInfo, strackerInfo, initInfo,structureResult) {
+  trackStr2Obj(fileName, trackerPos, cntObj, commonInfo, strackerInfo, initInfo,structureResult) {
+    console.log("cntObj",cntObj)
     // console.log("================================================")
     // console.log("fileName",fileName)
     // console.log("trackerPos",trackerPos)
@@ -48,9 +49,7 @@ export default {
     if(strackerInfo.gen3 !== undefined && strackerInfo.gen3 === "Yes"){
       isGen3 = true
     }
-    console.log("================================================")
     console.log("isGen3",isGen3)
-    console.log("================================================")
     //处理梁信息
     const beam_length = strackerInfo.l_beam //主梁总长
     let d = strackerInfo.beam_divide_info_lst
@@ -141,7 +140,7 @@ export default {
     let rowColor = ''
     let purlinObj = []
     if (trackerPos == 'Exterior') {
-      rowColor = '#FF3366'
+      rowColor = '#F6D2D2'
       purlinObj = [{ id: 0, material: 'S420GD', section: '-1.5x30x30x60', length: 1450, amount: purlinCount,installPoints:'4*M6',blockNeed:false }]
     }
     if (trackerPos == 'Edge') {
@@ -167,7 +166,7 @@ export default {
         }]
     }
     if (trackerPos == 'Interior') {
-      rowColor = '#33FF99'
+      rowColor = '#D2F6D6'
       purlinObj = [{ id: 0, material: 'S420GD', section: '-1.5x30x30x60', length: 450, amount: purlinCount,installPoints:'4*M6',blockNeed:false }]
     }
 
@@ -224,7 +223,7 @@ export default {
     r.server_controlor = pv_list.length - 2  //从控制器个数
     r.purlinCount = purlinCount
     r.dis = commonInfo.dis    //双联排时，用于计算连接杆的长度
-    r.layout = commonInfo.pp    //1P或2P
+    r.pv_layout = commonInfo.pp    //1P或2P
     r.post_height = strackerInfo.h_post  //柱子高度
     r.h_min = h_min  //最小离地高度
     r.pv_iftp = pv_iftp  //光伏板是否通铺

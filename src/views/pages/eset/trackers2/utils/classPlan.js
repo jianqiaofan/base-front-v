@@ -151,7 +151,7 @@ class Tracker {
     this.slew_count = ''  //减速机个数
     this.purlinCount = 0
     this.dis = ''    //双联排时，用于计算连接杆的长度
-    this.layout = ''    //1P或2P
+    this.pv_layout = '1P'    //1P或2P
     this.post_height = 2500  //柱子高度
     this.h_min = 500  //最小离地高度
     this.pv_iftp = ''  //光伏板是否通铺

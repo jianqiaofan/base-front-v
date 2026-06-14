@@ -53,8 +53,23 @@ export default {
   computed:{
 
   },
-  props: ['receive','scope'],
+  props: ['receive', 'scope', 'initialData'],
+  created() {
+    this.hydrateFromInitial()
+  },
   methods: {
+    hydrateFromInitial() {
+      if (!this.initialData) {
+        return
+      }
+      if (this.initialData.pile_desc) {
+        this.pile_desc = this.initialData.pile_desc
+      }
+      const pileObj = this.initialData.pile_obj
+      if (pileObj && pileObj.pile_depth != null) {
+        this.pile_depth = pileObj.pile_depth
+      }
+    },
     onSubmit() {
       console.log('submit!')
     },

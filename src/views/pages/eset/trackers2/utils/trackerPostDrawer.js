@@ -20,7 +20,12 @@ const COLORS = {
   headerValueSecondary: '#e8edf3',
   headerAccentStart: '#6dd4cc',
   headerAccentEnd: '#3a9e96',
-  headerDivider: 'rgba(94, 196, 188, 0.18)'
+  headerDivider: 'rgba(94, 196, 188, 0.18)',
+  modifiedSection: '#ffd866',
+  pileInfoType0: '#b48cff',
+  pileInfoType1: '#5eb8ff',
+  pileInfoType2: '#ffd866',
+  pileInfoType3: '#5adb8f'
 }
 
 const BEAM_COLOR_SETS = [
@@ -448,6 +453,11 @@ function drawBeamHeader(ctx, options, horizontalScale) {
   })
 }
 
+function isSectionModified(section, originSection) {
+  if (!section || !originSection) return false
+  return String(section) !== String(originSection)
+}
+
 function parseBeamThickness(section) {
   if (section == null || section === '') {
     return ''
@@ -530,6 +540,9 @@ function drawBeamThicknessLabels(ctx, beamList, postList, toX, beamY, horizontal
       beamY
     )
 
+    ctx.fillStyle = isSectionModified(beam.section, beam.origin_section)
+      ? COLORS.modifiedSection
+      : COLORS.spanLabel
     ctx.fillText(thickness, x, y)
   })
 }
@@ -629,7 +642,12 @@ function buildPostLabelLines(post) {
   const lines = [
     { text: firstLine, color: COLORS.label },
     { text: post.material != null ? String(post.material) : '', color: COLORS.label },
-    { text: post.section != null ? String(post.section) : '', color: COLORS.label }
+    {
+      text: post.section != null ? String(post.section) : '',
+      color: isSectionModified(post.section, post.origin_section)
+        ? COLORS.modifiedSection
+        : COLORS.label
+    }
   ]
 
   if (post.ratio != null && post.ratio !== '' && Number(post.ratio) >= 0) {
@@ -641,6 +659,85 @@ function buildPostLabelLines(post) {
   }
 
   return lines
+}
+
+function resolvePileInfoColor(pileType) {
+  switch (Number(pileType)) {
+    case 0:
+      return COLORS.pileInfoType0
+    case 1:
+      return COLORS.pileInfoType1
+    case 2:
+      return COLORS.pileInfoType2
+    case 3:
+      return COLORS.pileInfoType3
+    default:
+      return COLORS.pileInfoType0
+  }
+}
+
+function buildPileInfoText(post) {
+  const pileType = post.pile_type != null ? Number(post.pile_type) : NaN
+  if (Number.isNaN(pileType)) {
+    return ''
+  }
+
+  switch (pileType) {
+    case 0: {
+      let depth = post.pile_depth
+      if (depth == null || depth === '') {
+        depth = post.pile_obj && post.pile_obj.pile_depth != null
+          ? post.pile_obj.pile_depth
+          : ''
+      }
+      return depth !== '' && depth != null ? String(depth) : ''
+    }
+    case 1:
+      return 'Bolt'
+    case 2:
+      return 'PHC'
+    case 3:
+      return 'SP'
+    default:
+      return ''
+  }
+}
+
+function computePostPileInfoLabelPosition(post, x, beamY, hs, vs) {
+  const text = buildPileInfoText(post)
+  if (!text) {
+    return null
+  }
+
+  const isDrive = isDrivePost(post)
+  const postWidthRatio = isDrive ? BASE.drivePostWidthRatio : BASE.nonDrivePostWidthRatio
+  const postWidth = BASE.postWidth * hs * postWidthRatio
+  const mainBodyHeight = BASE.mainBodyHeight * vs
+  const bottomLineHeight = BASE.bottomLineHeight * vs
+
+  return {
+    x: x + postWidth / 2 - 2 * hs + 2,
+    y: beamY + mainBodyHeight + bottomLineHeight / 2,
+    text
+  }
+}
+
+function drawPostPileInfoLabel(ctx, post, layout) {
+  const { x, beamY, horizontalScale, verticalScale, postWidth, mainBodyHeight, bottomLineHeight } = layout
+  const hs = horizontalScale
+  const vs = verticalScale
+  const position = computePostPileInfoLabelPosition(post, x, beamY, hs, vs)
+  if (!position) {
+    return
+  }
+
+  const fontSize = Math.max(10, Math.round(BASE.fontSize * hs))
+
+  ctx.font = `${fontSize}px Arial, sans-serif`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = resolvePileInfoColor(post.pile_type)
+  ctx.fillText(position.text, position.x, position.y)
 }
 
 /**
@@ -680,6 +777,16 @@ export function drawPostElement(ctx, post, layout) {
   ctx.stroke()
 
   drawPostBracket(ctx, x, beamY, hs, vs, colors)
+
+  drawPostPileInfoLabel(ctx, post, {
+    x,
+    beamY,
+    horizontalScale: hs,
+    verticalScale: vs,
+    postWidth,
+    mainBodyHeight,
+    bottomLineHeight
+  })
 
   const textStartY = beamY + mainBodyHeight + bottomLineHeight + BASE.textGap * vs
   const lineHeight = BASE.textLineHeight * vs
@@ -763,10 +870,112 @@ export function drawTrackerPostDiagram(ctx, width, height, postList, options = {
   })
 }
 
+function computePostSectionLabelY(beamY, verticalScale) {
+  const vs = verticalScale
+  const mainBodyHeight = BASE.mainBodyHeight * vs
+  const bottomLineHeight = BASE.bottomLineHeight * vs
+  const textStartY = beamY + mainBodyHeight + bottomLineHeight + BASE.textGap * vs
+  const lineHeight = BASE.textLineHeight * vs
+  const sectionLineIndex = 2
+
+  return textStartY + sectionLineIndex * lineHeight
+}
+
+/**
+ * 计算示意图上立柱截面、主梁厚度编辑控件的位置（与 drawTrackerPostDiagram 布局一致）
+ * @param {number} width 画布逻辑宽度
+ * @param {Array} postList post_info_lst
+ * @param {Object} options { horizontalScale, verticalScale, beamList }
+ * @returns {{ postOverlays: Array, beamOverlays: Array, pileOverlays: Array, beamHitOverlays: Array }}
+ */
+export function computeDiagramEditOverlays(width, postList, options = {}) {
+  const horizontalScale = options.horizontalScale != null ? options.horizontalScale : 1
+  const verticalScale = options.verticalScale != null ? options.verticalScale : 1
+  const beamList = options.beamList || []
+  const padding = BASE.padding
+  const hs = horizontalScale
+  const vs = verticalScale
+  const beamY = BASE.beamY * vs
+  const toX = createLayoutMapper(postList, beamList, width, padding)
+  const postXs = (postList || []).map((post) => toX(post.position))
+  const postSectionY = computePostSectionLabelY(beamY, vs)
+
+  const postOverlays = (postList || []).map((post) => ({
+    post,
+    x: toX(post.position),
+    y: postSectionY,
+    key: String(post.position)
+  }))
+
+  const beamOverlays = []
+  const sortedBeams = beamList
+    .slice()
+    .sort((a, b) => Number(a.start) - Number(b.start))
+
+  sortedBeams.forEach((beam, index) => {
+    const thickness = parseBeamThickness(beam.section)
+    if (!thickness) {
+      return
+    }
+
+    const left = toX(beam.start)
+    const right = toX(beam.end)
+    const centerX = (left + right) / 2
+    const { x, y } = resolveThicknessLabelPosition(
+      centerX,
+      left,
+      right,
+      postXs,
+      hs,
+      vs,
+      beamY
+    )
+
+    beamOverlays.push({
+      beam,
+      x,
+      y,
+      key: `${beam.start}-${beam.end}-${index}`
+    })
+  })
+
+  const pileOverlays = []
+  ;(postList || []).forEach((post) => {
+    const position = computePostPileInfoLabelPosition(post, toX(post.position), beamY, hs, vs)
+    if (!position) {
+      return
+    }
+    pileOverlays.push({
+      post,
+      x: position.x,
+      y: position.y,
+      text: position.text,
+      key: String(post.position)
+    })
+  })
+
+  const beamHeight = BASE.beamHeight * vs
+  const beamHitOverlays = sortedBeams.map((beam, index) => {
+    const left = toX(beam.start)
+    const right = toX(beam.end)
+    return {
+      beam,
+      left,
+      top: beamY - beamHeight / 2,
+      width: Math.max(0, right - left),
+      height: beamHeight,
+      key: `beam-hit-${beam.start}-${beam.end}-${index}`
+    }
+  }).filter((item) => item.width > 0)
+
+  return { postOverlays, beamOverlays, pileOverlays, beamHitOverlays }
+}
+
 export {
   BASE as POST_DRAW_BASE,
   BEAM_COLOR_SETS,
   parseBeamThickness,
   buildBeamTypeText,
+  buildPileInfoText,
   resolveBeamMaterial
 }

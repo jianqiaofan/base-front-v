@@ -26,8 +26,16 @@ export default {
   computed:{
 
   },
-  props: ['receive','scope'],
+  props: ['receive', 'scope', 'initialData'],
+  created() {
+    this.hydrateFromInitial()
+  },
   methods: {
+    hydrateFromInitial() {
+      if (this.initialData && this.initialData.pile_desc) {
+        this.pile_desc = this.initialData.pile_desc
+      }
+    },
     onSubmit() {
       console.log('submit!')
     },

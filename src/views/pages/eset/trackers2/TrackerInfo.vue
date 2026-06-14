@@ -1,19 +1,20 @@
 <template>
   <div
     class="tracker-card"
-    :class="{ 'tracker-card--minimized': collapsed }"
+    :class="{ 'tracker-card--minimized': minimized }"
     :style="{ backgroundColor: tracker.rowColor }"
   >
     <div
       class="tracker-card__header"
-      :class="{ 'tracker-card__header--zero-qty': isZeroQuantity }"
+      :class="{ 'tracker-card__header--minimized': minimized }"
     >
       <h2 ref="titleEl" class="tracker-card__title" :title="trackerTitleFull">
-        <span ref="titleNameEl" class="tracker-card__title-name">{{ tracker.trackBrifeName }}</span>
+        <span ref="titleNameEl" class="tracker-card__title-name">{{ paddedTrackerBriefName }}</span>
         <span
           v-if="trackerDisplayId && showTrackerId"
           class="tracker-card__title-id"
         >[{{ trackerDisplayId }}]</span>
+        
         <span
           v-if="trackerDisplayId"
           ref="titleIdMeasureEl"
@@ -21,7 +22,7 @@
           aria-hidden="true"
         >[{{ trackerDisplayId }}]</span>
       </h2>
-      <div v-if="isZeroQuantity" class="tracker-card__header-qty">
+      <div v-if="minimized" class="tracker-card__header-qty">
         <span class="tracker-card__header-qty-label">支架数量</span>
         <el-input
           v-model="tracker.trackerNum"
@@ -30,15 +31,26 @@
           @change="normalizeTrackerNum"
         />
       </div>
-      <button
-        v-if="!isZeroQuantity"
-        type="button"
-        class="tracker-card__toggle-btn"
-        :title="minimized ? '恢复' : '最小化'"
-        @click.stop="toggleMinimize"
-      >
-        <i :class="minimized ? 'el-icon-full-screen' : 'el-icon-minus'"></i>
-      </button>
+      <div class="tracker-card__header-actions">
+        <button
+          v-if="hasBomData"
+          type="button"
+          class="tracker-card__bom-btn"
+          :class="{ 'tracker-card__bom-btn--alert': hasBomError }"
+          :title="hasBomError ? '查看BOM结果（存在异常）' : '查看BOM结果'"
+          @click.stop="openBom"
+        >
+          BOM
+        </button>
+        <button
+          type="button"
+          class="tracker-card__toggle-btn"
+          :title="minimized ? '恢复' : '最小化'"
+          @click.stop="toggleMinimize"
+        >
+          <i :class="minimized ? 'el-icon-full-screen' : 'el-icon-minus'"></i>
+        </button>
+      </div>
     </div>
     <div v-show="showBody" class="tracker-card__body">
       <div class="tracker-card__watermark-layer" aria-hidden="true">
@@ -59,14 +71,14 @@
       <h3 class="section-block__title">支架概览</h3>
       <div class="section-block__content">
         <div class="field-grid field-grid--tracker">
-          <div v-if="!isZeroQuantity" class="field-cell">
+          <div class="field-cell">
             <span class="field-cell__label">支架数量</span>
             <el-input
               v-model="tracker.trackerNum"
               size="small"
               class="field-cell__input"
               @change="normalizeTrackerNum"
-            />
+            /><span class="field-cell__label">套</span>
           </div>
           <div class="field-cell">
             <span class="field-cell__label">产品系列</span>
@@ -80,8 +92,17 @@
             </el-select>
           </div>
           <div class="field-cell">
+            <span class="field-cell__label">组件排布</span>
+            <el-select v-model="tracker.pv_layout" size="small" class="field-cell__select">
+              <el-option label="1P" value="1p"/>
+              <el-option label="2P" value="2p"/>
+            </el-select>
+            <span class="field-cell__label">{{ tracker.pv_iftp ? '通铺' : '不通铺' }}</span>
+          </div>
+          <div class="field-cell">
             <span class="field-cell__label">组件容量</span>
             <el-input v-model="tracker.pv_capacity" size="small" class="field-cell__input" />
+            <span class="field-cell__label">Wp</span>
           </div>
           <div class="field-cell">
             <span class="field-cell__label">供电方式</span>
@@ -268,14 +289,22 @@
         >
           <div class="purlin-item__header">
             <span class="purlin-item__label">
-              截面型号 / 材质 / 长度 / 数量{{ purlinList.length > 1 ? ` ${index + 1}` : '' }}
+              截面型号 / 长度 / 材质 / 数量{{ purlinList.length > 1 ? ` ${index + 1}` : '' }}
             </span>
             <el-button type="text" size="mini" class="purlin-item__delete" @click="deletePurlin(purlin.id)">删除</el-button>
           </div>
           <div class="field-grid field-grid--purlin">
-            <div class="field-cell">
+            <div class="field-cell field-cell--purlin-section">
               <span class="field-cell__label">截面型号</span>
-              <el-select v-model="purlin.section" size="small" class="field-cell__select">
+              <el-select
+                v-model="purlin.section"
+                size="small"
+                class="field-cell__select field-cell__select--purlin-section"
+                filterable
+                allow-create
+                default-first-option
+                placeholder="选择或输入截面"
+              >
                 <el-option
                   v-for="opt in select_option.purlin_section_options"
                   :key="opt.value"
@@ -283,6 +312,15 @@
                   :value="opt.value"
                 />
               </el-select>
+              <el-button
+                type="primary"
+                size="mini"
+                plain
+                class="field-cell__action-btn"
+                @click="openCustomPurlinSection(purlin)"
+              >
+                自定义截面
+              </el-button>
             </div>
             <div class="field-cell">
               <span class="field-cell__label">长度</span>
@@ -306,14 +344,14 @@
                 />
               </el-select>
             </div>
-            <div class="field-cell">
+            <div class="field-cell field-cell--purlin-amount">
               <span class="field-cell__label">数量</span>
-              <el-input v-model="purlin.amount" size="small" class="field-cell__input" />
+              <el-input v-model="purlin.amount" size="small" class="field-cell__input field-cell__input--purlin-amount" />
             </div>
           </div>
           <div class="field-grid field-grid--purlin-install">
             <div class="field-cell">
-              <span class="field-cell__label">光伏板安装</span>
+              <span class="field-cell__label">组件安装</span>
               <el-select v-model="purlin.installPoints" size="small" class="field-cell__select">
                 <el-option
                   v-for="opt in select_option.install_points_options"
@@ -339,17 +377,25 @@
       </div>
     </div>
     </div>
+
+    <PurlinCustomSectionDialog
+      :visible.sync="customSectionVisible"
+      :initial-section="customSectionInitialSection"
+      @confirm="handleCustomSectionConfirm"
+    />
   </div>
 </template>
 
 <script>
 import TrackerInfoPic from '@/views/pages/eset/trackers2/TrackerInfoPic.vue'
+import PurlinCustomSectionDialog from '@/views/pages/eset/trackers2/PurlinCustomSectionDialog.vue'
 
 export default {
   name: 'TrackerInfo',
 
   components: {
-    TrackerInfoPic
+    TrackerInfoPic,
+    PurlinCustomSectionDialog
   },
 
   props: {
@@ -361,16 +407,17 @@ export default {
 
   data() {
     return {
-      minimized: false,
       showTrackerId: true,
       titleResizeObserver: null,
+      customSectionVisible: false,
+      customSectionTarget: null,
       select_option: {
         product_system_options: [
           { text: '二代单排', value: 'single_row' },
-          { text: '二代双排(M)', value: 'double_row-M' },
-          { text: '二代双排(E)', value: 'double_row-E' },
-          { text: '三代(立柱有GAP)', value: '3Gen_tracker' },
-          { text: '三代(立柱无GAP)', value: '3Gen_tracker_no_gap' }
+          // { text: '二代双排(M)', value: 'double_row-M' },
+          // { text: '二代双排(E)', value: 'double_row-E' },
+          { text: '三代(通铺)', value: '3Gen_tracker_no_gap' },
+          { text: '三代(非通铺)', value: '3Gen_tracker' }
         ],
         power_supply_options: [
           { text: '小组件供电', value: '小组件供电' },
@@ -425,12 +472,37 @@ export default {
           { text: '不需要', value: false }
         ],
         dumper_num_options: [
-          { text: '无', value: '0' },
-          { text: '1对', value: '1pairs' },
-          { text: '2对', value: '2pairs' },
-          { text: '3对', value: '3pairs' },
-          { text: '4对', value: '4pairs' },
-          { text: '5对', value: '5pairs' }
+        { text: 'no damper', value: '0' },
+          { text: '1 pair', value: '1pairs' },
+          { text: '2 pairs', value: '2pairs' },
+          { text: '3 pairs', value: '3pairs' },
+          { text: '4 pairs', value: '4pairs' },
+          { text: '5 pairs', value: '5pairs' },
+          { text: '6 pairs', value: '6pairs' },
+          { text: '7 pairs', value: '7pairs' },
+          { text: '8 pairs', value: '8pairs' },
+          { text: '9 pairs', value: '9pairs' },
+          { text: '10 pairs', value: '10pairs' },
+          { text: '1 set', value: '1' },
+          { text: '2 sets', value: '2' },
+          { text: '3 sets', value: '3' },
+          { text: '4 sets', value: '4' },
+          { text: '5 sets', value: '5' },
+          { text: '6 sets', value: '6' },
+          { text: '7 sets', value: '7' },
+          { text: '8 sets', value: '8' },
+          { text: '9 sets', value: '9' },
+          { text: '10 sets', value: '10' },
+          { text: '11 sets', value: '11' },
+          { text: '12 sets', value: '12' },
+          { text: '13 sets', value: '13' },
+          { text: '14 sets', value: '14' },
+          { text: '15 sets', value: '15' },
+          { text: '16 sets', value: '16' },
+          { text: '17 sets', value: '17' },
+          { text: '18 sets', value: '18' },
+          { text: '19 sets', value: '19' },
+          { text: '20 sets', value: '20' }
         ],
         dumper_type_options: [
           { text: '450阻尼器', value: '450' },
@@ -438,13 +510,13 @@ export default {
           { text: '790阻尼器', value: '790' }
         ],
         spring_damper_num_options: [
-          { text: '无', value: '0' },
-          { text: '1对', value: '1pairs' },
-          { text: '2对', value: '2pairs' },
-          { text: '1套', value: '1' },
-          { text: '2套', value: '2' },
-          { text: '3套', value: '3' },
-          { text: '4套', value: '4' }
+          { text: 'no damper', value: '0' },
+          { text: '1pairs', value: '1pairs' },
+          { text: '2pairs', value: '2pairs' },
+          { text: '1 set', value: '1' },
+          { text: '2 sets', value: '2' },
+          { text: '3 sets', value: '3' },
+          { text: '4 sets', value: '4' }
         ],
         purlin_section_options: [
           { text: '-1.4x30x30x50', value: '-1.4x30x30x50' },
@@ -526,17 +598,34 @@ export default {
     purlinList() {
       return this.tracker.purlin_info_lst || []
     },
-    isZeroQuantity() {
-      const num = parseInt(this.tracker.trackerNum, 10)
-      return !isNaN(num) && num === 0
+
+    customSectionInitialSection() {
+      return this.customSectionTarget && this.customSectionTarget.section != null
+        ? this.customSectionTarget.section
+        : ''
     },
 
-    collapsed() {
-      return this.minimized || this.isZeroQuantity
+    hasBomData() {
+      const bom1 = this.tracker.resultList && this.tracker.resultList.bom1
+      return Array.isArray(bom1) && bom1.length > 0
+    },
+
+    hasBomError() {
+      const bomErr = this.tracker.resultList && this.tracker.resultList.bomErr
+      return Array.isArray(bomErr) && bomErr.length > 0
+    },
+
+    minimized: {
+      get() {
+        return !!this.tracker.uiMinimized
+      },
+      set(value) {
+        this.$set(this.tracker, 'uiMinimized', !!value)
+      }
     },
 
     showBody() {
-      return !this.collapsed
+      return !this.minimized
     },
 
     trackerDisplayId() {
@@ -547,6 +636,14 @@ export default {
 
       const txtIndex = rawId.indexOf('.txt')
       return txtIndex !== -1 ? rawId.substring(0, txtIndex) : rawId
+    },
+
+    paddedTrackerBriefName() {
+      const name = String(this.tracker.trackBrifeName || '')
+      if (name.length >= 16) {
+        return name.slice(0, 16)
+      }
+      return name + ' '.repeat(16 - name.length)
     },
 
     trackerTitleFull() {
@@ -591,7 +688,7 @@ export default {
       this.scheduleTitleLayoutUpdate()
     },
 
-    collapsed() {
+    minimized() {
       this.scheduleTitleLayoutUpdate()
     }
   },
@@ -729,15 +826,19 @@ export default {
       this.minimized = !this.minimized
     },
 
+    openBom() {
+      if (!this.hasBomData) {
+        return
+      }
+      this.$emit('open-bom', this.tracker.id)
+    },
+
     normalizeTrackerNum() {
       let num = parseInt(this.tracker.trackerNum, 10)
       if (isNaN(num) || num < 0) {
         num = 0
       }
       this.tracker.trackerNum = num
-      if (num > 0) {
-        this.minimized = false
-      }
     },
 
     addPurlin() {
@@ -762,6 +863,26 @@ export default {
         return
       }
       this.tracker.purlin_info_lst = this.tracker.purlin_info_lst.filter(item => item.id !== pid)
+    },
+
+    openCustomPurlinSection(purlin) {
+      this.customSectionTarget = purlin
+      this.customSectionVisible = true
+    },
+
+    handleCustomSectionConfirm(section) {
+      if (this.customSectionTarget) {
+        this.customSectionTarget.section = section
+        this.ensurePurlinSectionOption(section)
+      }
+      this.customSectionTarget = null
+    },
+
+    ensurePurlinSectionOption(section) {
+      const options = this.select_option.purlin_section_options
+      if (!options.some((item) => item.value === section)) {
+        options.push({ text: section, value: section })
+      }
     }
   }
 
@@ -797,7 +918,7 @@ export default {
   border-bottom: none;
 }
 
-.tracker-card__header--zero-qty {
+.tracker-card__header--minimized {
   min-height: 36px;
   padding: 4px 14px;
 }
@@ -817,13 +938,16 @@ export default {
   overflow: hidden;
 }
 
-.tracker-card__header--zero-qty .tracker-card__title {
+.tracker-card__header--minimized .tracker-card__title {
   line-height: 28px;
 }
 
 .tracker-card__title-name {
   flex-shrink: 0;
-  white-space: nowrap;
+  display: inline-block;
+  width: 16ch;
+  white-space: pre;
+  box-sizing: content-box;
 }
 
 .tracker-card__title-id {
@@ -837,6 +961,58 @@ export default {
   pointer-events: none;
   height: 0;
   overflow: hidden;
+}
+
+.tracker-card__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tracker-card__bom-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 24px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  color: #409eff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tracker-card__bom-btn:hover {
+  background: rgba(255, 255, 255, 0.85);
+  color: #66b1ff;
+}
+
+.tracker-card__bom-btn--alert {
+  animation: tracker-card-bom-blink 0.5s linear infinite;
+}
+
+.tracker-card__bom-btn--alert:hover {
+  color: #fff;
+}
+
+@keyframes tracker-card-bom-blink {
+  0%, 49.9% {
+    background: rgba(245, 108, 108, 0.92);
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(245, 108, 108, 0.65);
+  }
+
+  50%, 100% {
+    background: rgba(255, 255, 255, 0.5);
+    color: #f56c6c;
+    box-shadow: none;
+  }
 }
 
 .tracker-card__toggle-btn {
@@ -1102,12 +1278,45 @@ export default {
   color: #f56c6c;
 }
 
+.purlin-item .field-cell {
+  background: transparent;
+  padding: 4px 0;
+}
+
+.purlin-item .field-cell__label {
+  width: 56px;
+  text-align: right;
+}
+
 .field-grid--purlin {
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: minmax(280px, 1.8fr) minmax(120px, 1fr) minmax(130px, 1fr) minmax(96px, 0.7fr);
+  gap: 6px 12px;
+  align-items: center;
+}
+
+.field-cell--purlin-section {
+  gap: 8px;
+}
+
+.field-cell__select--purlin-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-cell__action-btn {
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.field-cell--purlin-amount .field-cell__input--purlin-amount {
+  max-width: none;
+  width: 100%;
 }
 
 .field-grid--purlin-install {
-  margin-top: 6px;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  margin-top: 4px;
+  grid-template-columns: minmax(200px, 1fr) minmax(200px, 1fr);
+  gap: 6px 12px;
+  align-items: center;
 }
 </style>
